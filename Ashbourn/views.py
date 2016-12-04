@@ -1,0 +1,133 @@
+from .models import Activity, Person, Location, Relation
+from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import dateutil.parser
+from django.http import HttpResponse
+from django.template import loader
+from itertools import chain
+
+
+@csrf_exempt
+def add_record_view(request):
+    hash = request.POST['hash']
+    activity_type = request.POST.get('activity_type', '')
+    text = request.POST.get('text', '')
+    call_duration = request.POST.get('call_duration','')
+    to_from = request.POST.get('to_from','')
+    person = Person.objects.get(hash=hash)
+    time = dateutil.parser.parse(request.POST.get('time', ''))
+    #owner = request.POST.get('owner', '')
+    category = request.POST.get('category', '')
+    location_name = request.POST.get('location', '')
+    locX = request.POST.get('locX','')
+    locY = request.POST.get('locY','')
+    if location_name != '':
+        location = Location.objects.get(name=location_name)
+        Activity.objects.create(time=time, activity_type=activity_type, text=text, person=person,
+                                category=category, location=location, call_duration=call_duration,
+                                to_from=to_from,locX=locX,locY=locY)
+    else:
+        Activity.objects.create(time=time, activity_type=activity_type, text=text, person=person,
+                                category=category, call_duration=call_duration,
+                                to_from=to_from,locX=locX,locY=locY)
+
+    return JsonResponse({'message': 'record added! yoohoo!'})
+    # return render(request,'add_record.html')
+
+
+@csrf_exempt
+def get_locations(request):
+    hash = request.POST['hash']
+    person = Person.objects.get(hash=hash)
+    loc_activities = Activity.objects.filter(person=person,category="Location")
+    loc_list = list(loc_activities)
+    str_result = ""
+    for loc_act in loc_activities:
+    	str_result += str(loc_act.time) + "---" + loc_act.activity_data + "---"
+    return JsonResponse({'result':str_result})
+
+@csrf_exempt
+def get_all_activities(request):
+    hash = request.Post['hash']
+    person = Person.objects.get(hash=hash)
+    all_activities = Activity.objects.filter(person=person)
+    act_list = list(all_activities)
+    str_result = ""
+    for act in all_activities:
+        str_result += str(act.time) + "---" + act.category \
+        + "---" + str(act.Location) + "---" + str(act.activity_type) \
+        + "---" + str(act.activity_data) + "---"
+    return JsonResponse({'result':str_result})
+
+@csrf_exempt
+def test_get_info(request):
+    return JsonResponse({'message': 'Im alive!! Im working :D'})
+
+
+def show_person_table(request):
+    query_result = Person.objects.all()
+    template = loader.get_template('persons_table.html')
+    context = {
+        'query_result': query_result,
+    }
+    return JsonResponse(
+        {'html': template.render(context, request)}
+    )
+
+
+def show_relations_table(request):
+    print(request.GET)
+    person_hash = request.GET.get('person_hash')
+    result1 = Relation.objects.filter(person_1__hash=person_hash).all()
+    result2 = Relation.objects.filter(person_2__hash=person_hash).all()
+    result = list(chain(result1, result2))
+    print('result--')
+    print(result)
+    template = loader.get_template('relations_table.html')
+    context = {
+        'query_result': result,
+    }
+    return JsonResponse(
+        {'html': template.render(context, request)}
+    )
+
+
+def show_report_home(request):
+    persons = Person.objects.all()
+    locations = Location.objects.all()
+
+    template = loader.get_template('report_home.html')
+    context = {
+        'persons': persons,
+        'locations': locations,
+    }
+
+    if request.method == "POST":
+        person_hash = request.POST.get('person', '')
+        result = Activity.objects.all()
+        context['selectperson'] = 'all'
+        context['location'] = 'all'
+
+        if person_hash != "all":
+            result = Activity.objects.filter(person__hash=person_hash).all().order_by('time')
+            context['selectperson'] = Person.objects.filter(hash=person_hash).first()
+
+        location = request.POST.get('location', '')
+        if location != "all":
+            result = result.filter(location__name=location).all().order_by('time')
+            context['location'] = location
+
+        from_time = dateutil.parser.parse(request.POST.get('time-from', ''))
+        to_time = dateutil.parser.parse(request.POST.get('time-to', ''))
+
+        result = result.filter(time__gte=from_time, time__lte=to_time).all().order_by('time')
+
+        # result = Activity.objects.filter(person__hash=person_hash, location__name=location,
+        #                                  time__gte=from_time, time__lte=to_time).all()
+
+        context['query_result'] = result
+        context['time_from'] = from_time
+        context['time_to'] = to_time
+
+    return HttpResponse(template.render(context, request))
