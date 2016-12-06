@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <link rel="stylesheet" href="{% static "css/bootstrap-datetimepicker.css" %}">
+    <link rel="stylesheet" href="{% static "css/myStyles.css" %}">
+    <link rel="stylesheet" href="{% static "css/bootstrap.min.css" %}">
+    {#    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"#}
+    {#          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">#}
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="../static/js/bootstrap-datetimepicker.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <a href="#" class="navbar-brand"><img src="../static/img/ualberta_logo.jpg" style="max-width: 100px"></a>
+                <li class="nav-item"><a href="/website/">Activity</a></li>
+                <button class="btn btn-default navbar-btn people-table"><a href="">People</a></button>
+            </ul>
+        </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+</nav>
+
+<div class="report-content">
+    <form style="width: 500px; margin-left: auto; margin-right: auto" method="post">
+        {% csrf_token %}
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-xs-6">
+                    <div class="form-group">
+                        <label for="selectperson">Person</label>
+                        <select class="form-control" id="id_person" name="person" defa>
+                            <option id="person-select" value="all">all</option>
+                            {% for person in persons %}
+
+                                <option id="person-select" value="{{ person.hash }}">{{ person.name }}</option>
+                            {% endfor %}
+
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="selectlocation">Location</label>
+                        <select class="form-control" id="selectlocation" name="location">
+                            <option id="location-select" value="all">all</option>
+                            {% for loc in locations %}
+
+                                <option id="location-select" value="{{ loc.name }}">{{ loc.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                </div>
+                <div class="col-xs-6">
+                    <div class="input-group date">
+                        <label>From</label>
+                        <input type="text" class="form-control time_picker" name="time-from">
+                    </div>
+                    <div class="input-group date">
+                        <label>To</label>
+                        <input type="text" class="form-control time_picker" name="time-to">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary submit_button" style="margin: 10px">Submit</button>
+    </form>
+
+
+    <div id="activity-table" style="margin-left: 100px;margin-right: 100px; border: double">
+        {% include "filtered_activity_table.html" %}
+    </div>
+</div>
+<div class="relation-table" style="width: 500px; margin-left: auto;margin-right: auto">
+
+</div>
+</body>
+
+</html>
+
+<script>
+    $(document).ready(function () {
+        $(".time_picker").datetimepicker();
+
+        $(document).on('click', '.people-table', function () {
+            console.log('clicked')
+            $.ajax({
+                url: "/get_people_table/",
+                traditional: true,
+                async: false,
+                type: "GET",
+                dataType: "json",
+                data: {
+                    hash: 'something'
+                },
+                success: function (data) {
+                    console.log(data['html'])
+                    $('.report-content').replaceWith(data['html']);
+                },
+                failure: function (data) {
+                    console.log('Got an error when requesting show_activity_table');
+                }
+            });
+        });
+        $(document).on('click', '.relation-clicked', function () {
+
+            $.ajax({
+                url: "/get_relations_table/",
+                traditional: true,
+                async: false,
+                type: "GET",
+                dataType: "json",
+                data: {
+                    person_hash: $(this).data('id')
+                },
+                success: function (data) {
+                    $('.relation-table').html(data['html']);
+                },
+                failure: function (data) {
+                    console.log('Got an error when requesting show_activity_table');
+                }
+            });
+        });
+        {#        $(document).on('click', ".submit_button", function () {#}
+        {#            console.log('we are clicked!')#}
+        {#            $.ajax({#}
+        {#                url: "/query_activities/",#}
+        {#                traditional: true,#}
+        {#                async: false,#}
+        {#                type: "GET",#}
+        {#                dataType: "json",#}
+        {#                data: {#}
+        {#                    person_hash: $("#person-select").data('id'),#}
+        {#                    location: $("#location-select").data('id'),#}
+        {#                    from_time: $("#time-from").val(),#}
+        {#                    to_time: $("#time-to").val()#}
+        {#                },#}
+        {#                success: function (data) {#}
+        {#                    console.log('we were successfull!!!!!!!!!!!!!!!!!!!')#}
+        {#                    $('#activity-table').html(data['html']);#}
+        {#                },#}
+        {#                failure: function (data) {#}
+        {#                    console.log('Got an error when requesting show_activity_table');#}
+        {#                }#}
+        {#            });#}
+        {#        });#}
+
+    });
+
+</script>
