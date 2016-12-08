@@ -2,7 +2,8 @@
 Main Django project located in django-server directory    
 
 Setup:
-* Clone this repository    
+* Clone this repository     
+* cd into django-server directory    
 * Use [Virtualenv](https://virtualenv.pypa.io/en/stable/) to create a custom python environment where you clone this repository locally 
 * Additional requirements likely needed before pip install requirments.txt:    
       $ sudo apt-get install libxml2-dev libxslt1-dev python2.7-dev -y
