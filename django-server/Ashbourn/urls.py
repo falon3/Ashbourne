@@ -21,7 +21,7 @@ import settings
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'', views.index),
+    url(r'^map/', views.map_view),
     url(r'^add_record/', views.add_record_view, name='FirstMap-index'),
     url(r'^get_info/', views.test_get_info),
     url(r'^website/', views.show_report_home),
