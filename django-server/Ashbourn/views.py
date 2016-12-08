@@ -12,55 +12,25 @@ from itertools import chain
 def add_record_view(request):
     hash = request.POST['hash']
     activity_type = request.POST.get('activity_type', '')
-    text = request.POST.get('text', '')
-    call_duration = request.POST.get('call_duration','')
-    to_from = request.POST.get('to_from','')
+    activity_data = request.POST.get('activity_data', '')
     person = Person.objects.get(hash=hash)
     time = dateutil.parser.parse(request.POST.get('time', ''))
-    #owner = request.POST.get('owner', '')
+    owner = request.POST.get('owner', '')
     category = request.POST.get('category', '')
+
     location_name = request.POST.get('location', '')
-    locX = request.POST.get('locX','')
-    locY = request.POST.get('locY','')
     if location_name != '':
         location = Location.objects.get(name=location_name)
-        Activity.objects.create(time=time, activity_type=activity_type, text=text, person=person,
-                                category=category, location=location, call_duration=call_duration,
-                                to_from=to_from,locX=locX,locY=locY)
+        Activity.objects.create(time=time, activity_type=activity_type, activity_data=activity_data, person=person,
+                                owner=owner, category=category, location=location)
     else:
-        Activity.objects.create(time=time, activity_type=activity_type, text=text, person=person,
-                                category=category, call_duration=call_duration,
-                                to_from=to_from,locX=locX,locY=locY)
+        Activity.objects.create(time=time, activity_type=activity_type, activity_data=activity_data, person=person,
+                                owner=owner, category=category, )
 
     return JsonResponse({'message': 'record added! yoohoo!'})
     # return render(request,'add_record.html')
 
 
-@csrf_exempt
-def get_locations(request):
-    hash = request.POST['hash']
-    person = Person.objects.get(hash=hash)
-    loc_activities = Activity.objects.filter(person=person,category="Location")
-    loc_list = list(loc_activities)
-    str_result = ""
-    for loc_act in loc_activities:
-    	str_result += str(loc_act.time) + "---" + loc_act.activity_data + "---"
-    return JsonResponse({'result':str_result})
-
-@csrf_exempt
-def get_all_activities(request):
-    hash = request.Post['hash']
-    person = Person.objects.get(hash=hash)
-    all_activities = Activity.objects.filter(person=person)
-    act_list = list(all_activities)
-    str_result = ""
-    for act in all_activities:
-        str_result += str(act.time) + "---" + act.category \
-        + "---" + str(act.Location) + "---" + str(act.activity_type) \
-        + "---" + str(act.activity_data) + "---"
-    return JsonResponse({'result':str_result})
-
-@csrf_exempt
 def test_get_info(request):
     return JsonResponse({'message': 'Im alive!! Im working :D'})
 

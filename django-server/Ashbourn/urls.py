@@ -21,7 +21,6 @@ from . import views
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^add_record/', views.add_record_view),
-    url(r'^get_locations/', views.get_locations),
     url(r'^get_info/', views.test_get_info),
     url(r'^website/', views.show_report_home),
     url(r'^get_people_table/', views.show_person_table),

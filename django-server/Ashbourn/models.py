@@ -56,19 +56,16 @@ class Relation(models.Model):
 
 
 class Activity(models.Model):
+    owner = models.CharField(max_length=1, default='P')
     category = models.CharField(max_length=20, default='not specified')
     person = models.ForeignKey('Person', null=True, related_name='activities')
+    location = models.ForeignKey('Location', null=True, blank=True)
     time = models.DateTimeField()
     activity_type = models.CharField(max_length=100)
-    call_duration = models.CharField(max_length=10,blank=True)
-    to_from = models.CharField(max_length=20,blank=True)
-    text = models.TextField(default='',blank = True)
-    location = models.ForeignKey('Location', null=True, blank=True)
-    locX = models.CharField(max_length=20,blank=True)
-    locY = models.CharField(max_length=20,blank=True)
+    activity_data = models.TextField(default='', blank=True)
 
     def __str__(self):
-        return "%s - %s %s ----------> %s" % (self.person.__str__(), self.activity_type, self.category, str(self.time))
+        return "%s %s - %s" % (str(self.time), self.person.__str__(), self.activity_type)
 
     class Meta:
         verbose_name = 'Activity'

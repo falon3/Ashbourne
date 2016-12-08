@@ -1,1 +1,6 @@
+db.sqlite3
+django-server/Ashbourn/migrations/*
+django-server/Ashbourn/settings.py
 venv*
+*.pyc
+*~
