@@ -4,9 +4,13 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import dateutil.parser
 from django.http import HttpResponse
+from django.shortcuts import render_to_response
 from django.template import loader
 from itertools import chain
 
+def index(request):
+    template = loader.get_template('MapView.html')
+    return HttpResponse(template.render(request))
 
 @csrf_exempt
 def add_record_view(request):
