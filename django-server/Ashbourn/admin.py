@@ -1,5 +1,6 @@
-from django.contrib import admin
-from .models import Activity, Person, Relation, Location
+#from django.contrib import admin
+from django.contrib.gis import admin
+from .models import Activity, Person, Relation, Location, WorldBorder
 # Register your models here.
 
 
@@ -23,4 +24,4 @@ admin.site.register(Location, LocationAdmin)
 admin.site.register(Person, PersonAdmin)
 admin.site.register(Relation, RelationAdmin)
 admin.site.register(Activity, ActivityAdmin)
-
+admin.site.register(WorldBorder, admin.GeoModelAdmin)

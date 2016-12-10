@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     'Ashbourn',
 ]
 
@@ -77,9 +78,10 @@ WSGI_APPLICATION = 'Ashbourn.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': 'spatialDB',
+        'USER': 'falon',
+    },
 }
 
 
@@ -122,5 +124,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = ('static/',)
+
+# these may get installed somewhere different on your machine
+GEOS_LIBRARY_PATH = '/usr/local/lib/libgeos_c.so'
+GDAL_LIBRARY_PATH = '/usr/local/lib/libgdal.so'
 
 # STATIC_ROOT = os.path.join(BASE_DIR, 'static')

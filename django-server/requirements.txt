@@ -1,6 +1,7 @@
 Django==1.9.5
-argparse==1.2.1
+libxml2dom==0.5
 lxml==3.6.4
+lxml-asserts==0.1.1
+psycopg2==2.6.2
 python-dateutil==2.5.3
 six==1.10.0
-wsgiref==0.1.2
