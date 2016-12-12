@@ -25,3 +25,4 @@ admin.site.register(Person, PersonAdmin)
 admin.site.register(Relation, RelationAdmin)
 admin.site.register(Activity, ActivityAdmin)
 admin.site.register(WorldBorder, admin.GeoModelAdmin)
+

@@ -1,32 +1,60 @@
-<!DOCTYPE HTML>
-<html>
-    <head>
-        <title>OpenLayers Demo</title>
+{% extends 'report_home.html' %}
+{% block content %}
+<script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+<script>
+ var Edmonton_LonLat = [-113.49566,53.52646];
+ function init() {
+     map = new OpenLayers.Map("basicMap");
+     var mapnik         = new OpenLayers.Layer.OSM();
+     var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+     var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
+     var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]).transform( fromProjection, toProjection);
+     var zoom           = 13; 
+     
+     map.addLayer(mapnik);
+     map.setCenter(position, zoom );
+ }
+    $(document).ready(function () {
+        $('.report-content').hide();
+
+        $(document).on('click', '.people-table', function () {
+            $('.report-content').show();
+            $.ajax({
+                url: "/get_people_table/",
+                traditional: true,
+                async: false,
+                type: "GET",
+                dataType: "json",
+                data: {
+                    hash: 'something'
+                },
+                success: function (data) {
+                    console.log(data['html']);
+                    $('.report-content').replaceWith(data['html']);
+                    $('.mapview').hide();
+                    
+                },
+                failure: function (data) {
+                    console.log('Got an error when requesting show_activity_table');
+                }
+            });
+        });
+    }); 
+</script>        
+
+    <span class="mapview">
+        <h2 style="text-align:center;" >OpenLayers Demo</h2>
         <style type="text/css">
          html, body, #basicMap {
              width: 100%;
              height: 90%;
-             margin: 0;
+             margin: 10;
          }
         </style>
-        <script src="http://www.openlayers.org/api/OpenLayers.js"></script>
-        <script>
-         var Edmonton_LonLat = [-113.49566,53.52646];
-         function init() {
-             map = new OpenLayers.Map("basicMap");
-             var mapnik         = new OpenLayers.Layer.OSM();
-             var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
-             var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
-             var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]).transform( fromProjection, toProjection);
-             var zoom           = 13; 
-             
-             map.addLayer(mapnik);
-             map.setCenter(position, zoom );
-         }
-        </script>
-    </head>
-    <body onload="init();">
-        <div id="basicMap"></div> 
-        <H1> hey there, Falon is trying to work with openStreet Map here !! </h1>
-    </body>
-</html>
+        <div id="basicMap">
+            <body onload="init();">                   
+            </body>
+        </div>
+        <h1> hey there, Falon is trying to work with openStreet Map here !! </h1>
+    </span>
+{% endblock %}
