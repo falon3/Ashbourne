@@ -60,8 +60,8 @@ Setup:
       > $ sudo apt-get install postgresql-9.5-pgrouting         
                   
 * after PostGIS is installed create database and then put this db name in your settings.py file:             
-      > $ createdb  <db name>          
-      > $ psql <db name>        
+      > $ createdb  < db name >          
+      > $ psql < db name >        
       > $ > CREATE EXTENSION postgis;    
                   
 * copy the Ashbourn/settings.py.sample file into Ashbourn/settings.py and modify as needed for your own computer and database
