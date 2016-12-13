@@ -17,7 +17,7 @@
     $(document).ready(function () {
         $('.report-content').hide();
 
-        $(document).on('click', '.people-table', function () {
+        $(document).on('click', '#people', function () {
             $('.report-content').show();
             $.ajax({
                 url: "/get_people_table/",
