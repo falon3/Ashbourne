@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.template import loader
 from itertools import chain
+import datetime
 
 def map_view(request):
     template = loader.get_template('MapView.html')
@@ -92,8 +93,16 @@ def show_report_home(request):
             result = result.filter(location__name=location).all().order_by('time')
             context['location'] = location
 
-        from_time = dateutil.parser.parse(request.POST.get('time-from', ''))
-        to_time = dateutil.parser.parse(request.POST.get('time-to', ''))
+        if not request.POST.get('time-from'):
+            # default get 3 year range
+            from_time = datetime.datetime.now() - datetime.timedelta(days=1096)
+        else:
+            from_time = dateutil.parser.parse(request.POST.get('time-from', ''))
+
+        if not request.POST.get('time-to'):
+            to_time = datetime.datetime.now()
+        else:
+            to_time = dateutil.parser.parse(request.POST.get('time-to', ''))
 
         result = result.filter(time__gte=from_time, time__lte=to_time).all().order_by('time')
 

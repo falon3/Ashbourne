@@ -42,7 +42,9 @@ class Location(models.Model):
     # id = models.PositiveIntegerField();
     name = models.CharField(max_length=50, default='')
     address = models.CharField(max_length=30)
-    geofence = models.CharField(max_length=80)
+    #geofence = models.CharField(max_length=80)
+    lon = models.FloatField()
+    lat = models.FloatField()
     description = models.CharField(max_length=50)
 
     def __str__(self):
