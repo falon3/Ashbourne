@@ -70,7 +70,8 @@ Setup:
       > $ pip install -r requirements.txt   
             
 * Then run this command to create the models in the db        
-      > $ python manage.py migrate --run-syncdb   
- May need to try this one too:      
-      > python manage.py makemigrations Ashbourn      
+      > $ python manage.py migrate --run-syncdb                
+ May need to try this one too                     
+      $ python manage.py makemigrations Ashbourn          
+      
 Alexandr Folder is separate project code being considered being encorporated into the Ashbourn project
