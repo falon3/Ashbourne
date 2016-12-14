@@ -60,8 +60,8 @@ Setup:
       > $ sudo apt-get install postgresql-9.5-pgrouting         
                   
 * after PostGIS is installed create database and then put this db name in your settings.py file:             
-      > $ createdb  <db name>          
-      > $ psql <db name>        
+      > $ createdb  < db name >          
+      > $ psql < db name >        
       > $ > CREATE EXTENSION postgis;    
                   
 * copy the Ashbourn/settings.py.sample file into Ashbourn/settings.py and modify as needed for your own computer and database
@@ -70,6 +70,8 @@ Setup:
       > $ pip install -r requirements.txt   
             
 * Then run this command to create the models in the db        
-      > $ python manage.py migrate --run-syncdb   
-            
+      > $ python manage.py migrate --run-syncdb                
+ May need to try this one too                     
+      $ python manage.py makemigrations Ashbourn          
+      
 Alexandr Folder is separate project code being considered being encorporated into the Ashbourn project
