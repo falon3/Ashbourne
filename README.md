@@ -72,8 +72,9 @@ Setup:
 * Then run this command to create the models in the db        
       > $ python manage.py migrate --run-syncdb                
  May need to try this one too                     
-      $ python manage.py makemigrations Ashbourn      
-                                                     
+      $ python manage.py makemigrations Ashbourn            
+      $ python manage.py migrate          
+                                                          
 * to Load all the world borders data in load.py:  
 ```
       $ python manage.py shell            
