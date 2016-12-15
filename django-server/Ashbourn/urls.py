@@ -25,5 +25,6 @@ urlpatterns = [
     url(r'^get_info/', views.test_get_info),
     url(r'^website/', views.show_report_home),
     url(r'^get_people_table/', views.show_person_table),
-    url(r'^get_relations_table/', views.show_relations_table)
+    url(r'^get_relations_table/', views.show_relations_table),
+    url(r'^get_locs_in_time/', views.get_locs_in_time)
 ]

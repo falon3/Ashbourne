@@ -48,6 +48,18 @@ def get_locations(request):
     return JsonResponse({'result':str_result})
 
 @csrf_exempt
+def get_locs_in_time(request):
+    hash = request.POST['hash']
+    person = Person.objects.get(hash=hash)
+    time1 = dateutil.parser.parse(request.POST.get('time1', ''))
+    time2 = dateutil.parser.parse(request.POST.get('time2', ''))
+    activites = Activity.objects.filter(person=person,time__gte=time1,time__lte=time2,category="Location")
+    str_result = ""
+    for act in activites:
+        str_result += str(act.time) + "---" + act.locX + "," + act.locY + "---"
+    return JsonResponse({'result':str_result})
+    
+@csrf_exempt
 def get_all_activities(request):
     hash = request.Post['hash']
     person = Person.objects.get(hash=hash)
