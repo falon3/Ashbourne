@@ -92,13 +92,18 @@ def show_report_home(request):
             result = result.filter(location__name=location).all().order_by('time')
             context['location'] = location
 
-        from_time = dateutil.parser.parse(request.POST.get('time-from', ''))
-        to_time = dateutil.parser.parse(request.POST.get('time-to', ''))
+        if not request.POST.get('time-from'):
+            # default get 3 year range
+            from_time = datetime.datetime.now() - datetime.timedelta(days=1096)
+        else:
+            from_time = dateutil.parser.parse(request.POST.get('time-from', ''))
+
+        if not request.POST.get('time-to'):
+            to_time = datetime.datetime.now()
+        else:
+            to_time = dateutil.parser.parse(request.POST.get('time-to', ''))
 
         result = result.filter(time__gte=from_time, time__lte=to_time).all().order_by('time')
-
-        # result = Activity.objects.filter(person__hash=person_hash, location__name=location,
-        #                                  time__gte=from_time, time__lte=to_time).all()
 
         context['query_result'] = result
         context['time_from'] = from_time
