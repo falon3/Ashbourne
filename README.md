@@ -77,7 +77,7 @@ Setup:
 * to Load all the world borders data in load.py:  
 ```
       $ python manage.py shell            
-      >>> from world import load          
+      >>> from Ashbourn import load          
       >>> load.run()      
       ```    
       
