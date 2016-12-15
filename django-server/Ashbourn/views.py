@@ -1,17 +1,25 @@
-from .models import Activity, Person, Location, Relation
+from .models import Activity, Person, Location, Relation, WorldBorder
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import dateutil.parser
 from django.http import HttpResponse
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, render, redirect
 from django.template import loader
 from itertools import chain
+from vectorformats.Formats import Django, GeoJSON
 import datetime
 
+# def map_view(request):
+#     template = loader.get_template('MapView.html')
+#     return HttpResponse(template.render(request))
+
 def map_view(request):
-    template = loader.get_template('MapView.html')
-    return HttpResponse(template.render(request))
+    ly = WorldBorder.objects.filter(name='Canada')
+    djf = Django.Django(geodjango='mpoly', properties=['name'])
+    geoj = GeoJSON.GeoJSON()
+    my_geojson = geoj.encode(djf.decode(ly))
+    return render(request, "MapView.html", {'my_geojson': my_geojson})
 
 @csrf_exempt
 def add_record_view(request):
