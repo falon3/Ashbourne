@@ -1,32 +1,110 @@
-<!DOCTYPE HTML>
-<html>
-    <head>
-        <title>OpenLayers Demo</title>
+{% extends 'report_home.html' %}
+{% block content %}
+
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+<script>
+ /* var Edmonton_LonLat = [-113.49566,53.52646];
+    function init() {
+    map = new OpenLayers.Map("basicMap");
+    var mapnik         = new OpenLayers.Layer.OSM();
+    var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+    var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
+    var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]).transform( fromProjection, toProjection);
+    var zoom           = 13; 
+    
+    map.addLayer(mapnik);
+    map.setCenter(position, zoom );
+    } */
+
+    
+     
+     function init(){
+         //var map;
+         var Edmonton_LonLat = [-113.49566,53.52646];
+         var map = new OpenLayers.Map('map');
+         
+
+         //var WMS_layer = new OpenLayers.Layer.WMS( "OpenLayers WMS",
+         //                                          "http://vmap0.tiles.osgeo.org/wms/vmap0?", {layers: 'basic,clabel,ctylabel,statelabel'});
+         
+         
+         //WMS_layer.setIsBaseLayer(false);
+
+         var OSM_layer = new OpenLayers.Layer.OSM();
+         map.addLayer(OSM_layer);
+         
+         var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+         var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
+         var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]).transform( fromProjection, toProjection);
+         var zoom           = 3;
+ 
+         var layer = new OpenLayers.Layer.Vector("mpoly");
+         map.addLayer(layer);
+
+         var format = new OpenLayers.Format.GeoJSON();
+         var feat = format.read({{my_geojson|safe}}); 
+         layer.addFeatures(feat);      
+     
+         map.addControl(new OpenLayers.Control.LayerSwitcher());
+         map.setCenter(position, zoom );
+         
+
+         /* selectControl = new OpenLayers.Control.SelectFeature(
+            [OSM_layer, WMS_layer],
+            {
+            clickout: true, toggle: false,
+            multiple: false, hover: false,
+            toggleKey: "ctrlKey", // ctrl key removes from selection
+            multipleKey: "shiftKey" // shift key adds to selection
+            }
+            ); */
+        
+ }
+
+    $(document).ready(function () {
+        $('.report-content').hide();
+
+        $(document).on('click', '#people', function () {
+            $('.report-content').show();
+            $.ajax({
+                url: "/get_people_table/",
+                traditional: true,
+                async: false,
+                type: "GET",
+                dataType: "json",
+                data: {
+                    hash: 'something'
+                },
+                success: function (data) {
+                    console.log(data['html']);
+                    $('.report-content').replaceWith(data['html']);
+                    $('.mapview').hide();
+                    
+                },
+                failure: function (data) {
+                    console.log('Got an error when requesting show_activity_table');
+                }
+            });
+        });
+    }); 
+
+</script>        
+
+    <span class="mapview">
+        <h2 style="text-align:center;" >OpenLayers Demo</h2>
         <style type="text/css">
-         html, body, #basicMap {
+         html, body, #map {
              width: 100%;
              height: 90%;
-             margin: 0;
+             margin: 10;
          }
         </style>
-        <script src="http://www.openlayers.org/api/OpenLayers.js"></script>
-        <script>
-         var Edmonton_LonLat = [-113.49566,53.52646];
-         function init() {
-             map = new OpenLayers.Map("basicMap");
-             var mapnik         = new OpenLayers.Layer.OSM();
-             var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
-             var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
-             var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]).transform( fromProjection, toProjection);
-             var zoom           = 13; 
-             
-             map.addLayer(mapnik);
-             map.setCenter(position, zoom );
-         }
-        </script>
-    </head>
-    <body onload="init();">
-        <div id="basicMap"></div> 
-        <H1> hey there, Falon is trying to work with openStreet Map here !! </h1>
-    </body>
-</html>
+        <div id="map">
+            <body onload="init();">                   
+            </body>
+        </div>
+        <!-- {{my_geojson}} -->
+        <h1> hey, Falon is trying to work with openStreet Maps amd GeoDjango here !! </h1>
+    </span>
+{% endblock %}

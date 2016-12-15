@@ -1,0 +1,5 @@
+Ashbourn/migrations/*
+Ashbourn/settings.py
+venv*
+*.pyc
+*~
