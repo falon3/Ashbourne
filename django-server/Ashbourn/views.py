@@ -178,9 +178,6 @@ def show_report_home(request):
 
         result = result.filter(time__gte=from_time, time__lte=to_time).all().order_by('time')
 
-        # result = Activity.objects.filter(person__hash=person_hash, location__name=location,
-        #                                  time__gte=from_time, time__lte=to_time).all()
-
         context['query_result'] = result
         context['time_from'] = from_time
         context['time_to'] = to_time
