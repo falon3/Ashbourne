@@ -23,16 +23,22 @@
          //var map;
          var Edmonton_LonLat = [-113.49566,53.52646];
          var map = new OpenLayers.Map('map');
-         var base_layer = new OpenLayers.Layer.WMS( "OpenLayers WMS",
-                                                    "http://vmap0.tiles.osgeo.org/wms/vmap0?", {layers: 'basic'});
-         var next_layer = new OpenLayers.Layer.OSM();
+         
+
+         //var WMS_layer = new OpenLayers.Layer.WMS( "OpenLayers WMS",
+         //                                          "http://vmap0.tiles.osgeo.org/wms/vmap0?", {layers: 'basic,clabel,ctylabel,statelabel'});
+         
+         
+         //WMS_layer.setIsBaseLayer(false);
+
+         var OSM_layer = new OpenLayers.Layer.OSM();
+         map.addLayer(OSM_layer);
+         
          var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
          var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
          var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]).transform( fromProjection, toProjection);
-         var zoom           = 3; 
-
-         
-         
+         var zoom           = 3;
+ 
          var layer = new OpenLayers.Layer.Vector("mpoly");
          map.addLayer(layer);
 
@@ -41,9 +47,19 @@
          layer.addFeatures(feat);      
      
          map.addControl(new OpenLayers.Control.LayerSwitcher());
-         map.addLayer(base_layer);
-         map.addLayer(next_layer);
          map.setCenter(position, zoom );
+         
+
+         /* selectControl = new OpenLayers.Control.SelectFeature(
+            [OSM_layer, WMS_layer],
+            {
+            clickout: true, toggle: false,
+            multiple: false, hover: false,
+            toggleKey: "ctrlKey", // ctrl key removes from selection
+            multipleKey: "shiftKey" // shift key adds to selection
+            }
+            ); */
+        
  }
 
     $(document).ready(function () {
@@ -89,6 +105,6 @@
             </body>
         </div>
         <!-- {{my_geojson}} -->
-        <h1> hey there, Falon is trying to work with openStreet Map here !! </h1>
+        <h1> hey, Falon is trying to work with openStreet Maps amd GeoDjango here !! </h1>
     </span>
 {% endblock %}
