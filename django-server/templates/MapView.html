@@ -15,36 +15,75 @@
     
     map.addLayer(mapnik);
     map.setCenter(position, zoom );
-    } */
-
-    
-     
+    } */  
+     var map;
      function init(){
          //var map;
-         var Edmonton_LonLat = [-113.49566,53.52646];
-         var map = new OpenLayers.Map('map');
+         //var Edmonton_LonLat = [-113.49566,53.52646];
+         var Edmonton_LonLat = [-12636511, 7078908];
+         var options = {
+             'units' : "m",
+             'maxResolution' : 156543.0339,
+             'numZoomLevels' : 20,
+             'projection' : new OpenLayers.Projection("EPSG:3857"),
+             'maxExtent' : new OpenLayers.Bounds(-17037508,40000000,-5000000,12020000)
+         };
+         map = new OpenLayers.Map('map', options);
          
-
          //var WMS_layer = new OpenLayers.Layer.WMS( "OpenLayers WMS",
          //                                          "http://vmap0.tiles.osgeo.org/wms/vmap0?", {layers: 'basic,clabel,ctylabel,statelabel'});
-         
+         //map.addLayer(WMS_layer);
+         OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);
          
          //WMS_layer.setIsBaseLayer(false);
 
+
+
+
+         //geodjango_mpoly.layers.vector = new OpenLayers.Layer.Vector(" mpoly");
+         //geodjango_mpoly.map.addLayer(geodjango_mpoly.layers.vector);
+         // Read WKT from the text field.
+         //var wkt = document.getElementById('id_mpoly').value;
+         //if (wkt){
+             // After reading into geometry, immediately write back to
+             // WKT <textarea> as EWKT (so that SRID is included).
+             //var admin_geom = geodjango_mpoly.read_wkt(wkt);
+             //geodjango_mpoly.write_wkt(admin_geom);
+             //if (geodjango_mpoly.is_collection){
+                 // If geometry collection, add each component individually so they may be
+                 // edited individually.
+                 //for (var i = 0; i < geodjango_mpoly.num_geom; i++){
+                //     geodjango_mpoly.layers.vector.addFeatures([new OpenLayers.Feature.Vector(admin_geom.geometry.components[i].clone())]);
+                 //}
+             //} else {
+              //   geodjango_mpoly.layers.vector.addFeatures([admin_geom]);
+            // }
+         //}
+
+
+
+
+
+
+
+
+         //base layer
          var OSM_layer = new OpenLayers.Layer.OSM();
          map.addLayer(OSM_layer);
          
-         var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
-         var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
-         var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]).transform( fromProjection, toProjection);
-         var zoom           = 3;
+         //var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+         //var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
+         var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
+         var zoom           = 14;
  
          var layer = new OpenLayers.Layer.Vector("mpoly");
          map.addLayer(layer);
 
          var format = new OpenLayers.Format.GeoJSON();
-         var feat = format.read({{my_geojson|safe}}); 
-         layer.addFeatures(feat);      
+         var feat = format.read({{my_geojson|safe}});
+         console.log(feat);
+         
+         layer.addFeatures([feat]);      
      
          map.addControl(new OpenLayers.Control.LayerSwitcher());
          map.setCenter(position, zoom );
@@ -92,6 +131,7 @@
 </script>        
 
     <span class="mapview">
+        <button class="btn btn-default navbar-btn" style="float:left; !important" onclick="location.href ='/addArea/';">Add new Area</button>
         <h2 style="text-align:center;" >OpenLayers Demo</h2>
         <style type="text/css">
          html, body, #map {
