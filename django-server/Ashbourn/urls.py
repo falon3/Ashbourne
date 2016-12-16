@@ -24,7 +24,7 @@ urlpatterns = [
     url(r'^map/', views.map_view),
     url(r'^add_record/', views.add_record_view, name='FirstMap-index'),
     url(r'^get_info/', views.test_get_info),
-    url(r'^', views.show_report_home),
+    url(r'^website/', views.show_report_home),
     url(r'^addArea/', views.add_geoFence),
     url(r'^get_people_table/', views.show_person_table),
     url(r'^get_relations_table/', views.show_relations_table),

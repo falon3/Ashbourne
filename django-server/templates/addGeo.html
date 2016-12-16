@@ -74,9 +74,9 @@
                                         <span id="id_mpoly_admin_map">
                                             <script type="text/javascript">
                                              //<![CDATA[
-                                             
-                                             var Edmonton_LonLat = [-113.49566,53.52646];
+                                             var Edmonton_LonLat = [-12636511, 7078908];
                                              var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
+                                             var zoom = 14;
 
                                              OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);
                                              var geodjango_mpoly = {};
@@ -152,8 +152,6 @@
                                                  geodjango_mpoly.deleteFeatures();
                                                  document.getElementById('id_mpoly').value = '';
                                                  
-                                                 geodjango_mpoly.map.setCenter(new OpenLayers.LonLat(position), 10);
-                                                 
                                              };
                                              // Add Select control
                                              geodjango_mpoly.addSelectControl = function(){
@@ -195,17 +193,13 @@
                                                      'maxExtent' : new OpenLayers.Bounds(-17037508,40000000,-5000000,12020000)
                                                  };
                                                  
-                                                 var zoom = 10;
                                                  // The admin map for this geometry field.
-                                                 
                                                  geodjango_mpoly.map = new OpenLayers.Map('id_mpoly_map', options);
                                                  // Base Layer
                                                  geodjango_mpoly.layers.base = new OpenLayers.Layer.OSM("OpenStreetMap (Mapnik)");
                                                  geodjango_mpoly.map.addLayer(geodjango_mpoly.layers.base);
-                                                 geodjango_mpoly.map.setCenter(new OpenLayers.LonLat(position), 10);
                                                  
-                                                 
-                                                 
+                                                                                                 
                                                  geodjango_mpoly.layers.vector = new OpenLayers.Layer.Vector(" mpoly");
                                                  geodjango_mpoly.map.addLayer(geodjango_mpoly.layers.vector);
                                                  // Read WKT from the text field.
@@ -230,8 +224,8 @@
                                                          geodjango_mpoly.map.zoomTo(14);
                                                      }
                                                  } else {
-                                                     geodjango_mpoly.map.setCenter(new OpenLayers.LonLat(position), 10);
-                                                     //geodjango_mpoly.map.setCenter(new OpenLayers.LonLat(0, 0), 4);
+                                                    
+                                                     geodjango_mpoly.map.setCenter(position, zoom);
                                                      
                                                  }
                                                  // This allows editing of the geographic fields -- the modified WKT is
