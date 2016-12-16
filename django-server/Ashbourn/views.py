@@ -15,11 +15,15 @@ import datetime
 #     return HttpResponse(template.render(request))
 
 def map_view(request):
-    ly = WorldBorder.objects.filter(name='Canada')
+    ly = WorldBorder.objects.filter(name='test box')
     djf = Django.Django(geodjango='mpoly', properties=['name'])
     geoj = GeoJSON.GeoJSON()
     my_geojson = geoj.encode(djf.decode(ly))
     return render(request, "MapView.html", {'my_geojson': my_geojson})
+
+def add_geoFence(request):
+    template = loader.get_template('addGeo.html')
+    return HttpResponse(template.render(request))
 
 @csrf_exempt
 def add_record_view(request):
