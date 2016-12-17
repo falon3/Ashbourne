@@ -8,7 +8,10 @@ from django.shortcuts import render_to_response, render, redirect
 from django.template import loader
 from itertools import chain
 from vectorformats.Formats import Django, GeoJSON
+from shapely.geometry import shape
 import datetime
+import geojson
+import json
 
 # def map_view(request):
 #     template = loader.get_template('MapView.html')
@@ -20,13 +23,13 @@ def map_view(request):
     djf = Django.Django(geodjango='mpoly', properties=['name'])
     geoj = GeoJSON.GeoJSON()
     my_geojson = geoj.encode(djf.decode(ly))
-    return render(request, "MapView.html", {'my_geojson': my_geojson})
 
-@csrf_exempt
-def add_geoFence(request):
-    print("here")
-    template = loader.get_template('addGeo.html')
-    return HttpResponse(template.render(request))
+    #data = geojson.loads(my_geojson)
+    #poly = data['features'][0]['geometry']
+    #poly = shape(poly)
+    #wkt = poly.wkt
+
+    return render(request, "MapView.html", {'my_geojson': my_geojson})
 
 @csrf_exempt
 def add_record_view(request):
