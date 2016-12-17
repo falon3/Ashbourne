@@ -2,20 +2,16 @@
 {% block content %}
 
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<title>Add world border | Django site admin</title>
+<link rel="stylesheet" type="text/css" href="/static/admin/css/base.css" />
+<script type="text/javascript" src="/static/admin/js/vendor/jquery/jquery.js"></script>
+<script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
+<script type="text/javascript" src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
+<script type="text/javascript" src="/static/admin/js/prepopulate.js"></script>
+<script type="text/javascript" src="http://openlayers.org/api/2.13/OpenLayers.js"></script>
 <script src="http://www.openlayers.org/api/OpenLayers.js"></script>
 <script>
- /* var Edmonton_LonLat = [-113.49566,53.52646];
-    function init() {
-    map = new OpenLayers.Map("basicMap");
-    var mapnik         = new OpenLayers.Layer.OSM();
-    var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
-    var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
-    var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]).transform( fromProjection, toProjection);
-    var zoom           = 13; 
-    
-    map.addLayer(mapnik);
-    map.setCenter(position, zoom );
-    } */  
+ 
      var map;
      function init(){
          //var map;
@@ -30,60 +26,44 @@
          };
          map = new OpenLayers.Map('map', options);
          
-         //var WMS_layer = new OpenLayers.Layer.WMS( "OpenLayers WMS",
-         //                                          "http://vmap0.tiles.osgeo.org/wms/vmap0?", {layers: 'basic,clabel,ctylabel,statelabel'});
-         //map.addLayer(WMS_layer);
-         OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);
          
-         //WMS_layer.setIsBaseLayer(false);
-
-
-
-
-         //geodjango_mpoly.layers.vector = new OpenLayers.Layer.Vector(" mpoly");
-         //geodjango_mpoly.map.addLayer(geodjango_mpoly.layers.vector);
-         // Read WKT from the text field.
-         //var wkt = document.getElementById('id_mpoly').value;
-         //if (wkt){
-             // After reading into geometry, immediately write back to
-             // WKT <textarea> as EWKT (so that SRID is included).
-             //var admin_geom = geodjango_mpoly.read_wkt(wkt);
-             //geodjango_mpoly.write_wkt(admin_geom);
-             //if (geodjango_mpoly.is_collection){
-                 // If geometry collection, add each component individually so they may be
-                 // edited individually.
-                 //for (var i = 0; i < geodjango_mpoly.num_geom; i++){
-                //     geodjango_mpoly.layers.vector.addFeatures([new OpenLayers.Feature.Vector(admin_geom.geometry.components[i].clone())]);
-                 //}
-             //} else {
-              //   geodjango_mpoly.layers.vector.addFeatures([admin_geom]);
-            // }
-         //}
-
-
-
-
-
-
-
 
          //base layer
-         var OSM_layer = new OpenLayers.Layer.OSM();
+         var OSM_layer = new OpenLayers.Layer.OSM("OpenStreet Map (Mapnik)");
          map.addLayer(OSM_layer);
-         
+
+         OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);         
          //var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
          //var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
          var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
-         var zoom           = 14;
+         var zoom           = 10;
  
          var layer = new OpenLayers.Layer.Vector("mpoly");
          map.addLayer(layer);
 
          var format = new OpenLayers.Format.GeoJSON();
          var feat = format.read({{my_geojson|safe}});
-         console.log(feat);
-         
-         layer.addFeatures([feat]);      
+         var obj = JSON.stringify({{my_geojson|safe}}.features[0].geometry);
+         console.log(obj);
+         layer.addFeatures([feat]);   // THIS DOESNT DO ANYTHING RIGHT NOW
+
+         var wkt_f = new OpenLayers.Format.WKT();
+         var feats = "MULTIPOLYGON (((-12636817.93468799814582 7078279.020049697719514,-12635117.2108089979738 7079635.777301598340273,-12631410.01493799872696 7078240.801535598933697,-12632900.53698899783194 7075240.648175798356533,-12637161.90131499804556 7075030.446347998455167,-12636684.16988899745047 7076826.716512497514486,-12636817.93468799814582 7078279.020049697719514)))";
+
+         // FIGURE OUT HOW TO CONVERT THESE TO THE ABOVE COORDS OSM TO WKT
+         //var feats = "MULTIPOLYGON (((-113.5184669336591 53.51204090868711, -113.5031890711134 53.51928790483709, -113.469886763992 53.51183675000151, -113.4832763513893 53.49580722396505, -113.5215568384417 53.49468390892775, -113.5172653040249 53.50428218717662, -113.5184669336591 53.51204090868711)))";
+
+         var admin_geom = wkt_f.read(feats);
+         //var admin_geom = wkt_f.read(polygon);
+         var num_geom = admin_geom.geometry.components.length;
+         // write back to place we store the info
+         //document.getElementById('id_mpoly').value = 'SRID=3857;' + geodjango_mpoly.wkt_f.write(admin_geom);
+         for (var i = 0; i < num_geom; i++){
+             console.log(admin_geom.geometry.components[i]);
+             layer.addFeatures([new OpenLayers.Feature.Vector(admin_geom.geometry.components[i].clone())]);
+         }
+
+         layer.addFeatures([feats]); 
      
          map.addControl(new OpenLayers.Control.LayerSwitcher());
          map.setCenter(position, zoom );
@@ -131,9 +111,19 @@
 </script>        
 
     <span class="mapview">
-        <button class="btn btn-default navbar-btn" style="float:left; !important" onclick="location.href ='/addArea/';">Add new Area</button>
         <h2 style="text-align:center;" >OpenLayers Demo</h2>
         <style type="text/css">
+         #id_mpoly_map .aligned label { float:inherit; }
+         #id_mpoly { display: none; }
+         .olControlEditingToolbar .olControlModifyFeatureItemActive {
+             background-image: url("/static/admin/img/gis/move_vertex_on.svg");
+             background-repeat: no-repeat;
+         }
+         .olControlEditingToolbar .olControlModifyFeatureItemInactive {
+             background-image: url("/static/admin/img/gis/move_vertex_off.svg");
+             background-repeat: no-repeat;
+         }
+
          html, body, #map {
              width: 100%;
              height: 90%;
