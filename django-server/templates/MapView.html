@@ -13,10 +13,40 @@
 <script>
  
      var map;
+
+     function show_fences(layer){
+         var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+         var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
+         var wkt_f = new OpenLayers.Format.WKT();
+
+         console.log( {{my_geojson|safe}});
+         var data = {{my_geojson|safe}}.features; // each geofence from the API
+
+         // Build a WKT format string object after projecting coordinates into correct form
+         // example string accepted : "MULTIPOLYGON (((-12636817.93468799814582 7078279.020049697719514,-12635117.2108089979738 7079635.777301598340273)))";
+         for (var k = 0; k < data.length; k++){
+             var fence = data[k].geometry;
+             var wkt_builder = [];
+             wkt_builder.push(fence.type + "( ");
+             var coords = fence.coordinates[0][0];
+             for (var j = 0; j < coords.length; j++){
+                 var position = new OpenLayers.LonLat(coords[j]).transform( fromProjection, toProjection);
+                 wkt_builder.push(position.toShortString().replace(/,/g , "") + ", ");
+             }
+             wkt_builder.push(")");
+
+             // now can read the wkt string and add the features
+             var geom_feats = wkt_f.read(wkt_builder.join(""));
+             for (var i = 0; i < geom_feats.geometry.components.length; i++){
+                 console.log(geom_feats.geometry.components[i]);
+                 layer.addFeatures([new OpenLayers.Feature.Vector(geom_feats.geometry.components[i].clone())]);
+             }
+         }
+     }
+ 
      function init(){
-         //var map;
-         //var Edmonton_LonLat = [-113.49566,53.52646];
-         var Edmonton_LonLat = [-12636511, 7078908];
+         //var Edmonton_LonLat = [-113.49566,53.52646]; // in EPSG:4326 
+         var Edmonton_LonLat = [-12636511, 7078908]; // in EPSG:900913
          var options = {
              'units' : "m",
              'maxResolution' : 156543.0339,
@@ -26,61 +56,26 @@
          };
          map = new OpenLayers.Map('map', options);
          
-         
-
          //base layer
-         var OSM_layer = new OpenLayers.Layer.OSM("OpenStreet Map (Mapnik)");
+         var OSM_layer = new OpenLayers.Layer.OSM("OpenStreet Map");
          map.addLayer(OSM_layer);
 
          OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);         
-         //var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
-         //var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
+         
          var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
          var zoom           = 10;
  
-         var layer = new OpenLayers.Layer.Vector("mpoly");
+         // polygon layer
+         var layer = new OpenLayers.Layer.Vector("geo fences");
          map.addLayer(layer);
-
-         var format = new OpenLayers.Format.GeoJSON();
-         var feat = format.read({{my_geojson|safe}});
-         var obj = JSON.stringify({{my_geojson|safe}}.features[0].geometry);
-         console.log(obj);
-         layer.addFeatures([feat]);   // THIS DOESNT DO ANYTHING RIGHT NOW
-
-         var wkt_f = new OpenLayers.Format.WKT();
-         var feats = "MULTIPOLYGON (((-12636817.93468799814582 7078279.020049697719514,-12635117.2108089979738 7079635.777301598340273,-12631410.01493799872696 7078240.801535598933697,-12632900.53698899783194 7075240.648175798356533,-12637161.90131499804556 7075030.446347998455167,-12636684.16988899745047 7076826.716512497514486,-12636817.93468799814582 7078279.020049697719514)))";
-
-         // FIGURE OUT HOW TO CONVERT THESE TO THE ABOVE COORDS OSM TO WKT
-         //var feats = "MULTIPOLYGON (((-113.5184669336591 53.51204090868711, -113.5031890711134 53.51928790483709, -113.469886763992 53.51183675000151, -113.4832763513893 53.49580722396505, -113.5215568384417 53.49468390892775, -113.5172653040249 53.50428218717662, -113.5184669336591 53.51204090868711)))";
-
-         var admin_geom = wkt_f.read(feats);
-         //var admin_geom = wkt_f.read(polygon);
-         var num_geom = admin_geom.geometry.components.length;
-         // write back to place we store the info
-         //document.getElementById('id_mpoly').value = 'SRID=3857;' + geodjango_mpoly.wkt_f.write(admin_geom);
-         for (var i = 0; i < num_geom; i++){
-             console.log(admin_geom.geometry.components[i]);
-             layer.addFeatures([new OpenLayers.Feature.Vector(admin_geom.geometry.components[i].clone())]);
-         }
-
-         layer.addFeatures([feats]); 
-     
+         show_fences(layer);
+              
          map.addControl(new OpenLayers.Control.LayerSwitcher());
          map.setCenter(position, zoom );
-         
-
-         /* selectControl = new OpenLayers.Control.SelectFeature(
-            [OSM_layer, WMS_layer],
-            {
-            clickout: true, toggle: false,
-            multiple: false, hover: false,
-            toggleKey: "ctrlKey", // ctrl key removes from selection
-            multipleKey: "shiftKey" // shift key adds to selection
-            }
-            ); */
         
- }
+     }
 
+ 
     $(document).ready(function () {
         $('.report-content').hide();
 
@@ -109,21 +104,9 @@
     }); 
 
 </script>        
-
     <span class="mapview">
         <h2 style="text-align:center;" >OpenLayers Demo</h2>
         <style type="text/css">
-         #id_mpoly_map .aligned label { float:inherit; }
-         #id_mpoly { display: none; }
-         .olControlEditingToolbar .olControlModifyFeatureItemActive {
-             background-image: url("/static/admin/img/gis/move_vertex_on.svg");
-             background-repeat: no-repeat;
-         }
-         .olControlEditingToolbar .olControlModifyFeatureItemInactive {
-             background-image: url("/static/admin/img/gis/move_vertex_off.svg");
-             background-repeat: no-repeat;
-         }
-
          html, body, #map {
              width: 100%;
              height: 90%;
@@ -134,7 +117,6 @@
             <body onload="init();">                   
             </body>
         </div>
-        <!-- {{my_geojson}} -->
-        <h1> hey, Falon is trying to work with openStreet Maps amd GeoDjango here !! </h1>
+        
     </span>
 {% endblock %}

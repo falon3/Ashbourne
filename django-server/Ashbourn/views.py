@@ -1,4 +1,4 @@
-from .models import Activity, Person, Location, Relation, WorldBorder
+from .models import Activity, Person, Location, Relation, GeoFence
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -19,16 +19,12 @@ import json
 
 @csrf_exempt
 def map_view(request):
-    ly = WorldBorder.objects.filter(name='test box')
-    djf = Django.Django(geodjango='mpoly', properties=['name'])
+    fences = GeoFence.objects.all()
+    djf = Django.Django(geodjango='fence', properties=['name'])
     geoj = GeoJSON.GeoJSON()
-    my_geojson = geoj.encode(djf.decode(ly))
-
-    #data = geojson.loads(my_geojson)
-    #poly = data['features'][0]['geometry']
-    #poly = shape(poly)
-    #wkt = poly.wkt
-
+ 
+    my_geojson = geoj.encode(djf.decode(fences))
+    print(my_geojson)
     return render(request, "MapView.html", {'my_geojson': my_geojson})
 
 @csrf_exempt
