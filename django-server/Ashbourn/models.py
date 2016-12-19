@@ -31,7 +31,7 @@ class Location(models.Model):
     # id = models.PositiveIntegerField();
     name = models.CharField(max_length=50, default='')
     address = models.CharField(max_length=30)
-    geofence = models.ForeignKey('geoFence', null=True, blank=True)
+    geofence = models.ForeignKey('GeoFence', null=True, blank=True)
     lon = models.FloatField()
     lat = models.FloatField()
     description = models.CharField(max_length=50)
