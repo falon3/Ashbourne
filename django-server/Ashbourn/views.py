@@ -130,7 +130,6 @@ def show_person_table(request):
 
 
 def show_relations_table(request):
-    print(request.GET)
     person_hash = request.GET.get('person_hash')
     result1 = Relation.objects.filter(person_1__hash=person_hash).all()
     result2 = Relation.objects.filter(person_2__hash=person_hash).all()
