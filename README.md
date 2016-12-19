@@ -72,11 +72,9 @@ Setup:
 * if this is right after creating a new database first DELETE ALL MIGRATIONS IN THE MIGRATION FOLDER 
 * Then run this command to create the models in the db   
       > $ python manage.py makemigrations Ashbourn            
-      > $ python manage.py migrate 
-                    
- May need to try this one too if that doesn't work
-      > $ python manage.py migrate --run-syncdb  
+      > $ python manage.py migrate        
+      May need to try this one too or if if that last one doesn't work:                                      
+      > $ python manage.py migrate --run-syncdb                         
                
-                                                            
-      
-Alexandr Folder is separate project code being considered being encorporated into the Ashbourn project
+                                                                             
+* Alexandr Folder is separate project code being considered being encorporated into the Ashbourn project
