@@ -68,18 +68,15 @@ Setup:
       
 * Then run this command to install all requirements         
       > $ pip install -r requirements.txt   
-            
-* Then run this command to create the models in the db        
-      > $ python manage.py migrate --run-syncdb                
- May need to try this one too                     
-      $ python manage.py makemigrations Ashbourn            
-      $ python manage.py migrate          
-                                                          
-* to Load all the world borders data in load.py:  
-```
-      $ python manage.py shell            
-      >>> from Ashbourn import load          
-      >>> load.run()      
-      ```    
+ 
+* if this is right after creating a new database first DELETE ALL MIGRATIONS IN THE MIGRATION FOLDER 
+* Then run this command to create the models in the db   
+      > $ python manage.py makemigrations Ashbourn            
+      > $ python manage.py migrate 
+                    
+ May need to try this one too if that doesn't work
+      > $ python manage.py migrate --run-syncdb  
+               
+                                                            
       
 Alexandr Folder is separate project code being considered being encorporated into the Ashbourn project
