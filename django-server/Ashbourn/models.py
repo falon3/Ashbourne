@@ -4,9 +4,28 @@ import time
 from django.core.validators import RegexValidator
 #from django.db import models
 from django.contrib.gis.db import models
+import math
 
-# Create your models here.
+# projection transformation for coords
+def merc_x(lon):
+  r_major=6378137.000
+  return r_major*math.radians(lon)
 
+def merc_y(lat):
+  if lat>89.5:lat=89.5
+  if lat<-89.5:lat=-89.5
+  r_major=6378137.000
+  r_minor=6356752.3142
+  temp=r_minor/r_major
+  eccent=math.sqrt(1-temp**2)
+  phi=math.radians(lat)
+  sinphi=math.sin(phi)
+  con=eccent*sinphi
+  com=eccent/2
+  con=((1.0-con)/(1.0+con))**com
+  ts=math.tan((math.pi/2-phi)/2)/con
+  y=0-r_major*math.log(ts)
+  return y
 
 class Location(models.Model):
     # Regular Django fields corresponding to the attributes in the
@@ -74,8 +93,8 @@ class Activity(models.Model):
     def __str__(self):
         return "%s %s - %s" % (str(self.time), self.person.__str__(), self.activity_type)
     def save(self, *args, **kwargs):
-        self.locLat = self.actPoint.y
-        self.locLon = self.actPoint.x
+        self.locLat =  merc_y(self.actPoint.y)
+        self.locLon =  merc_x(self.actPoint.x)
         super(Activity, self).save(*args, **kwargs)  
 
     class Meta:
