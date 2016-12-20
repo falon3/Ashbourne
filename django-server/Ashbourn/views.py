@@ -8,14 +8,33 @@ from django.shortcuts import render_to_response, render, redirect
 from django.template import loader
 from itertools import chain
 from vectorformats.Formats import Django, GeoJSON
+
 #from shapely.geometry import shape
 import datetime
 import geojson
 import json
 
-# def map_view(request):
-#     template = loader.get_template('MapView.html')
-#     return HttpResponse(template.render(request))
+
+# projection transformation for coords
+def merc_x(lon):
+  r_major=6378137.000
+  return r_major*math.radians(lon)
+
+def merc_y(lat):
+  if lat>89.5:lat=89.5
+  if lat<-89.5:lat=-89.5
+  r_major=6378137.000
+  r_minor=6356752.3142
+  temp=r_minor/r_major
+  eccent=math.sqrt(1-temp**2)
+  phi=math.radians(lat)
+  sinphi=math.sin(phi)
+  con=eccent*sinphi
+  com=eccent/2
+  con=((1.0-con)/(1.0+con))**com
+  ts=math.tan((math.pi/2-phi)/2)/con
+  y=0-r_major*math.log(ts)
+  return y
 
 @csrf_exempt
 def map_view(request):
@@ -38,17 +57,17 @@ def add_record_view(request):
     #owner = request.POST.get('owner', '')
     category = request.POST.get('category', '')
     location_name = request.POST.get('location', '')
-    locX = request.POST.get('locLat','')
-    locY = request.POST.get('locLon','')
+    locLon = merc_y(request.POST.get('locLat',''))
+    locLat = merc_x(request.POST.get('locLon',''))
     if location_name != '':
         location = Location.objects.get(name=location_name)
         Activity.objects.create(time=time, activity_type=activity_type, text=text, person=person,
                                 category=category, location=location, call_duration=call_duration,
-                                to_from=to_from,locX=locX,locY=locY)
+                                to_from=to_from,locLon=locLon,locLat=locLat)
     else:
         Activity.objects.create(time=time, activity_type=activity_type, text=text, person=person,
                                 category=category, call_duration=call_duration,
-                                to_from=to_from,locX=locX,locY=locY)
+                                to_from=to_from,locLon=locLon,locLat=locLat)
 
     return JsonResponse({'message': 'record added! yoohoo!'})
     # return render(request,'add_record.html')
@@ -73,7 +92,7 @@ def get_locs_in_time(request):
     activites = Activity.objects.filter(person=person,time__gte=time1,time__lte=time2,category="Location")
     str_result = ""
     for act in activites:
-        str_result += str(act.time) + "---" + act.locX + "," + act.locY + "---"
+        str_result += str(act.time) + "---" + act.locLon + "," + act.locLat + "---"
     return JsonResponse({'result':str_result})
     
 @csrf_exempt
