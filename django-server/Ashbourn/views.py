@@ -1,4 +1,4 @@
-from .models import Activity, Person, Location, Relation, GeoFence
+from .models import Activity, Person, Relation, GeoFence
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -8,7 +8,7 @@ from django.shortcuts import render_to_response, render, redirect
 from django.template import loader
 from itertools import chain
 from vectorformats.Formats import Django, GeoJSON
-from shapely.geometry import shape
+#from shapely.geometry import shape
 import datetime
 import geojson
 import json

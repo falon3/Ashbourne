@@ -1,0 +1,23 @@
+Metadata-Version: 2.0
+Name: lxml-asserts
+Version: 0.1.1
+Summary: Handy functions for testing lxml etree objects for equality and compatibility
+Home-page: https://github.com/SuminAndrew/lxml-asserts
+Author: Andrew Sumin
+Author-email: sumin.andrew@gmail.com
+License: http://www.apache.org/licenses/LICENSE-2.0
+Platform: UNKNOWN
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Topic :: Software Development :: Testing
+Requires-Dist: lxml
+
+UNKNOWN
+
+
