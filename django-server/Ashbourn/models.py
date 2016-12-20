@@ -34,7 +34,7 @@ class Person(models.Model):
     watch_id = models.CharField(max_length=20)
     tag_id = models.CharField(max_length=20)
     name = models.CharField(max_length=50)
-    #location = models.ForeignKey('GeoFence', null=True, blank=True, related_name='locations')
+    home = models.ForeignKey('Location', null=True, blank=True, related_name='home')
     phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$',
                                  message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
     cell_number = models.CharField(validators=[phone_regex],  max_length=15)  # validators should be a list
@@ -67,11 +67,16 @@ class Activity(models.Model):
     to_from = models.CharField(max_length=20,blank=True)
     text = models.TextField(default='',blank = True)
     location = models.ForeignKey('Location', null=True, blank=True)
-    locX = models.CharField(max_length=20,blank=True)
-    locY = models.CharField(max_length=20,blank=True)
+    actPoint = models.PointField(null=True)
+    locLat = models.DecimalField(max_digits=10, decimal_places=2)
+    locLon = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return "%s %s - %s" % (str(self.time), self.person.__str__(), self.activity_type)
+    def save(self, *args, **kwargs):
+        self.locLat = self.actPoint.y
+        self.locLon = self.actPoint.x
+        super(Activity, self).save(*args, **kwargs)  
 
     class Meta:
         verbose_name = 'Activity'
