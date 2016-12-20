@@ -12,8 +12,12 @@ class RelationAdmin(admin.ModelAdmin):
     model = Relation
 
 
-class ActivityAdmin(admin.ModelAdmin):
+class ActivityAdmin(admin.OSMGeoAdmin):
     model = Activity
+    default_lon = -12636243
+    default_lat = 7075850
+    default_zoom = 12
+    readonly_fields = ('locLat', 'locLon')
 
 class LocationAdmin(admin.OSMGeoAdmin):
     default_lon = -12636243

@@ -38,8 +38,8 @@ def add_record_view(request):
     #owner = request.POST.get('owner', '')
     category = request.POST.get('category', '')
     location_name = request.POST.get('location', '')
-    locX = request.POST.get('locX','')
-    locY = request.POST.get('locY','')
+    locX = request.POST.get('locLat','')
+    locY = request.POST.get('locLon','')
     if location_name != '':
         location = Location.objects.get(name=location_name)
         Activity.objects.create(time=time, activity_type=activity_type, text=text, person=person,
