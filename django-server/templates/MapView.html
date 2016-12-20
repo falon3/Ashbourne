@@ -38,7 +38,6 @@
              // now can read the wkt string and add the features
              var geom_feats = wkt_f.read(wkt_builder.join(""));
              for (var i = 0; i < geom_feats.geometry.components.length; i++){
-                 console.log(geom_feats.geometry.components[i]);
                  layer.addFeatures([new OpenLayers.Feature.Vector(geom_feats.geometry.components[i].clone())]);
              }
          }
@@ -63,7 +62,7 @@
          OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);         
          
          var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
-         var zoom           = 10;
+         var zoom           = 14;
  
          // polygon layer
          var layer = new OpenLayers.Layer.Vector("geo fences");

@@ -8,7 +8,7 @@ from django.contrib.gis.db import models
 # Create your models here.
 
 
-class GeoFence(models.Model):
+class Location(models.Model):
     # Regular Django fields corresponding to the attributes in the
     # world borders shapefile.
     name = models.CharField(max_length=50, default='')
@@ -66,7 +66,7 @@ class Activity(models.Model):
     call_duration = models.CharField(max_length=10,blank=True)
     to_from = models.CharField(max_length=20,blank=True)
     text = models.TextField(default='',blank = True)
-    geofence = models.ForeignKey('GeoFence', null=True, blank=True)
+    location = models.ForeignKey('Location', null=True, blank=True)
     locX = models.CharField(max_length=20,blank=True)
     locY = models.CharField(max_length=20,blank=True)
 

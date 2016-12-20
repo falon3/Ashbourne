@@ -1,8 +1,7 @@
 #from django.contrib import admin
 from django.contrib.gis import admin
-from .models import Activity, Person, Relation, GeoFence
+from .models import Activity, Person, Relation, Location
 # Register your models here.
-
 
 
 class PersonAdmin(admin.ModelAdmin):
@@ -16,7 +15,7 @@ class RelationAdmin(admin.ModelAdmin):
 class ActivityAdmin(admin.ModelAdmin):
     model = Activity
 
-class GeoFenceAdmin(admin.OSMGeoAdmin):
+class LocationAdmin(admin.OSMGeoAdmin):
     default_lon = -12636243
     default_lat = 7075850
     default_zoom = 12
@@ -25,5 +24,5 @@ class GeoFenceAdmin(admin.OSMGeoAdmin):
 admin.site.register(Person, PersonAdmin)
 admin.site.register(Relation, RelationAdmin)
 admin.site.register(Activity, ActivityAdmin)
-admin.site.register(GeoFence, GeoFenceAdmin)
+admin.site.register(Location, LocationAdmin)
 
