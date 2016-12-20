@@ -1,4 +1,4 @@
-from .models import Activity, Person, Relation, GeoFence
+from .models import Activity, Person, Relation, Location
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -19,12 +19,11 @@ import json
 
 @csrf_exempt
 def map_view(request):
-    fences = GeoFence.objects.all()
+    fences = Location.objects.all()
     djf = Django.Django(geodjango='fence', properties=['name'])
-    geoj = GeoJSON.GeoJSON()
- 
+    geoj = GeoJSON.GeoJSON() 
     my_geojson = geoj.encode(djf.decode(fences))
-    print(my_geojson)
+
     return render(request, "MapView.html", {'my_geojson': my_geojson})
 
 @csrf_exempt
