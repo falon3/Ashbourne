@@ -105,7 +105,7 @@ def get_locations(request):
     loc_list = list(loc_activities)
     str_result = ""
     for loc_act in loc_activities:
-    	str_result += str(loc_act.time) + "---" + loc_act.activity_data + "---"
+    	str_result += "time: " + str(loc_act.time) + ", data: " + loc_act.activity_data 
     return JsonResponse({'result':str_result})
 
 @csrf_exempt
@@ -129,7 +129,7 @@ def get_calls_in_time(request):
     activites = Activity.objects.filter(person=person,time__gte=time1,time__lte=time2,category="Phone-Call")
     str_result = ""
     for act in activites:
-        str_result += str(act.time) + "---" + act.activity_type + "---" + act.to_from + "---" + act.call_duration + "---"
+        str_result += "time: " + str(act.time) + " type: " + str(act.activity_type) + "to_from: " + str(act.to_from) + " duration: " +  act.call_duration
     return JsonResponse({'result':str_result})
 
 @csrf_exempt
@@ -141,7 +141,7 @@ def get_sms_in_time(request):
     activites = Activity.objects.filter(person=person,time__gte=time1,time__lte=time2,category="Sms")
     str_result = ""
     for act in activites:
-        str_result += str(act.time) + "---" + act.activity_type + "---" + act.to_from + "---" + act.text + "---"
+        str_result += "time: " + str(act.time) + " type: " + str(act.activity_type) + "to_from: " + str(act.to_from) + " text: " + str(act.text) 
     return JsonResponse({'result':str_result})
 
 @csrf_exempt
@@ -152,9 +152,9 @@ def get_all_activities(request):
     act_list = list(all_activities)
     str_result = ""
     for act in all_activities:
-        str_result += str(act.time) + "---" + act.category \
-        + "---" + str(act.Location) + "---" + str(act.activity_type) \
-        + "---" + str(act.activity_data) + "---"
+        str_result += "time: " + str(act.time) + " category: " + act.category \
+        + " location: " + str(act.location) + " type: " + str(act.activity_type) \
+        + " text: " + str(act.text) 
     return JsonResponse({'result':str_result})
 
 def test_get_info(request):
@@ -177,8 +177,7 @@ def show_relations_table(request):
     result1 = Relation.objects.filter(person_1__hash=person_hash).all()
     result2 = Relation.objects.filter(person_2__hash=person_hash).all()
     result = list(chain(result1, result2))
-    print('result--')
-    print(result)
+
     template = loader.get_template('relations_table.html')
     context = {
         'query_result': result,

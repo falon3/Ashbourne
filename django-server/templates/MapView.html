@@ -38,6 +38,8 @@
     function show_points(point_vectors){
         var wkt_f = new OpenLayers.Format.WKT();
         var points = {{point_collection|safe}}.features; // each point from activity
+
+        // Build a WKT format string object for the location point in each activity
         for (var k = 0; k < points.length; k++){
             var pnt = points[k].geometry;
             var wkt_builder = [];
@@ -57,7 +59,7 @@
  
     function init(){
         //var Edmonton_LonLat = [-113.49566,53.52646]; // in EPSG:4326 
-        var Edmonton_LonLat = [-12636511, 7078908]; // in EPSG:900913
+        var Edmonton_LonLat = [-12636511, 7078908]; // in EPSG:3857
         var options = {
             'units' : "m",
             'maxResolution' : 156543.0339,
