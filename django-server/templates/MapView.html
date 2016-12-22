@@ -1,121 +1,114 @@
-{% extends 'report_home.html' %}
-{% block content %}
 
-<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-<title>Add world border | Django site admin</title>
 <link rel="stylesheet" type="text/css" href="/static/admin/css/base.css" />
 <script type="text/javascript" src="/static/admin/js/vendor/jquery/jquery.js"></script>
 <script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
 <script type="text/javascript" src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
 <script type="text/javascript" src="/static/admin/js/prepopulate.js"></script>
-<script type="text/javascript" src="http://openlayers.org/api/2.13/OpenLayers.js"></script>
-<script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+
+
 <script>
  
-     var map;
+    var map; 
+    function show_fences(layer, point_vectors){    
+        var wkt_f = new OpenLayers.Format.WKT();
 
-     function show_fences(layer){
-         var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
-         var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
-         var wkt_f = new OpenLayers.Format.WKT();
+        //console.log( {{locations|safe}});
+        var data = {{locations|safe}}.features; // each geofence from the API
 
-         console.log( {{my_geojson|safe}});
-         var data = {{my_geojson|safe}}.features; // each geofence from the API
+        // Build a WKT format string object for each polygon
+        // example string accepted : "MULTIPOLYGON (((-12636817.93468799814582 7078279.020049697719514,-12635117.2108089979738 7079635.777301598340273)))";
+        for (var k = 0; k < data.length; k++){
+            var fence = data[k].geometry;
+            var wkt_builder = [];
+            wkt_builder.push(fence.type + "( ");
+            var coords = fence.coordinates[0][0];
+            for (var j = 0; j < coords.length; j++){
+                var position = new OpenLayers.LonLat(coords[j])
+                    wkt_builder.push(position.toShortString().replace(/,/g , "") + ", ");
+            }
+            wkt_builder.push(")");
 
-         // Build a WKT format string object after projecting coordinates into correct form
-         // example string accepted : "MULTIPOLYGON (((-12636817.93468799814582 7078279.020049697719514,-12635117.2108089979738 7079635.777301598340273)))";
-         for (var k = 0; k < data.length; k++){
-             var fence = data[k].geometry;
-             var wkt_builder = [];
-             wkt_builder.push(fence.type + "( ");
-             var coords = fence.coordinates[0][0];
-             for (var j = 0; j < coords.length; j++){
-                 var position = new OpenLayers.LonLat(coords[j]).transform( fromProjection, toProjection);
-                 wkt_builder.push(position.toShortString().replace(/,/g , "") + ", ");
-             }
-             wkt_builder.push(")");
+            // now can read the wkt string and add the features
+            var geom_feats = wkt_f.read(wkt_builder.join(""));
+            layer.addFeatures([geom_feats]);
+        }
 
-             // now can read the wkt string and add the features
-             var geom_feats = wkt_f.read(wkt_builder.join(""));
-             for (var i = 0; i < geom_feats.geometry.components.length; i++){
-                 layer.addFeatures([new OpenLayers.Feature.Vector(geom_feats.geometry.components[i].clone())]);
-             }
-         }
-     }
+    }
+
+    function show_points(point_vectors){
+        var wkt_f = new OpenLayers.Format.WKT();
+        var points = {{point_collection|safe}}.features; // each point from activity
+        for (var k = 0; k < points.length; k++){
+            var pnt = points[k].geometry;
+            var wkt_builder = [];
+            wkt_builder.push(pnt.type + "( ");
+            for (var j = 0; j < points.length; j++){
+                var position = new OpenLayers.LonLat(pnt.coordinates)
+                    wkt_builder.push(position.toShortString().replace(/,/g , "") + ", ");
+            }
+            wkt_builder.push(")");
+
+            // now can read the wkt string and add the points
+            var geom = wkt_f.read(wkt_builder.join(""));
+            point_vectors.addFeatures([geom]);
+        }
+    }
  
-     function init(){
-         //var Edmonton_LonLat = [-113.49566,53.52646]; // in EPSG:4326 
-         var Edmonton_LonLat = [-12636511, 7078908]; // in EPSG:900913
-         var options = {
-             'units' : "m",
-             'maxResolution' : 156543.0339,
-             'numZoomLevels' : 20,
-             'projection' : new OpenLayers.Projection("EPSG:3857"),
-             'maxExtent' : new OpenLayers.Bounds(-17037508,40000000,-5000000,12020000)
-         };
-         map = new OpenLayers.Map('map', options);
-         
-         //base layer
-         var OSM_layer = new OpenLayers.Layer.OSM("OpenStreet Map");
-         map.addLayer(OSM_layer);
-
-         OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);         
-         
-         var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
-         var zoom           = 14;
  
-         // polygon layer
-         var layer = new OpenLayers.Layer.Vector("geo fences");
-         map.addLayer(layer);
-         show_fences(layer);
-              
-         map.addControl(new OpenLayers.Control.LayerSwitcher());
-         map.setCenter(position, zoom );
+    function init(){
+        //var Edmonton_LonLat = [-113.49566,53.52646]; // in EPSG:4326 
+        var Edmonton_LonLat = [-12636511, 7078908]; // in EPSG:900913
+        var options = {
+            'units' : "m",
+            'maxResolution' : 156543.0339,
+            'numZoomLevels' : 20,
+            'projection' : new OpenLayers.Projection("EPSG:3857"),
+            'maxExtent' : new OpenLayers.Bounds(-17037508,40000000,-5000000,12020000)
+        };
+        map = new OpenLayers.Map('map', options);
         
-     }
+        //base layer
+        var OSM_layer = new OpenLayers.Layer.OSM("OpenStreet Map");
+        map.addLayer(OSM_layer);
+
+        OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);         
+        
+        var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
+        var zoom           = 14;
+        
+        // polygon layer
+        var layer = new OpenLayers.Layer.Vector("geo fences");
+        map.addLayer(layer);
+        show_fences(layer);
+
+        // points from activities
+        var point_vectors = new OpenLayers.Layer.Vector("points path");
+        map.addLayer(point_vectors);
+        show_points(point_vectors);
+        
+        // zoom center and add toggles
+        map.addControl(new OpenLayers.Control.LayerSwitcher());
+        map.setCenter(position, zoom );
+        
+    }
 
  
-    $(document).ready(function () {
-        $('.report-content').hide();
+ $(document).ready(function () {
+     init();
 
-        $(document).on('click', '#people', function () {
-            $('.report-content').show();
-            $.ajax({
-                url: "/get_people_table/",
-                traditional: true,
-                async: false,
-                type: "GET",
-                dataType: "json",
-                data: {
-                    hash: 'something'
-                },
-                success: function (data) {
-                    console.log(data['html']);
-                    $('.report-content').replaceWith(data['html']);
-                    $('.mapview').hide();
-                    
-                },
-                failure: function (data) {
-                    console.log('Got an error when requesting show_activity_table');
-                }
-            });
-        });
-    }); 
+ }); 
 
 </script>        
     <span class="mapview">
-        <h2 style="text-align:center;" >City map with Geo Fences</h2>
+        <h2 style="text-align:center;" >{{title}}</h2>
         <style type="text/css">
-         html, body, #map {
+         #map {
              width: 100%;
              height: 90%;
              margin: 10;
          }
         </style>
         <div id="map">
-            <body onload="init();">                   
-            </body>
         </div>
         
     </span>
-{% endblock %}

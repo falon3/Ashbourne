@@ -3,7 +3,25 @@ $(document).ready(function () {
     $(".time_picker").datetimepicker();
     
     $(document).on('click', '.map', function () {
-        $(location).attr('href',"/map/");
+        //$(location).attr('href',"/map/");
+         $.ajax({
+            url: "/map/",
+            traditional: true,
+            async: false,
+            type: "GET",
+            dataType: "json",
+            data: {
+                person_hash: $(this).data('id')
+            },
+            success: function (data) {
+                //console.log(data['html'])
+                $('.report-content').html(data['html']);
+                
+            },
+            failure: function (data) {
+                console.log('Got an error when requesting show_activity_table');
+            }
+        });
     });
 
 
@@ -19,8 +37,8 @@ $(document).ready(function () {
                 hash: 'something'
             },
             success: function (data) {
-                console.log(data['html'])
-                $('.report-content').replaceWith(data['html']);
+                //console.log(data['html'])
+                $('.report-content').html(data['html']);
                 $('.report-content').show();
             },
             failure: function (data) {
@@ -46,29 +64,6 @@ $(document).ready(function () {
             }
         });
     });
-    // {        
-    //     $(document).on('click', ".submit_button", function () {}
-    //                    {            console.log('we are clicked!')}
-    //                         {            $.ajax({}
-    //                                             {               url: "/query_activities/",}
-    //                                             {                traditional: true,}
-    //                                             {                async: false,}
-    //                                             {                type: "GET",}
-    //                                             {                dataType: "json",}
-    //                                             {                data: {}
-    //                                                              {                    person_hash: $("#person-select").data('id'),}
-    //                                                              {                    location: $("#location-select").data('id'),}
-    //                                                              {                    from_time: $("#time-from").val(),}
-    //                                                              {                   to_time: $("#time-to").val()}
-    //                                                              {                },}
-    //                                             {                success: function (data) {}
-    //                                                              {                    console.log('we were successfull!!!!!!!!!!!!!!!!!!!')}
-    //                                                              {                    $('#activity-table').html(data['html']);}
-    //                                                              {                },}
-    //                                             {                failure: function (data) {}
-    //                                                              {                    console.log('Got an error when requesting show_activity_table');}
-    //                                                              {                }}
-    //                                             {            });}
-    //                         {        });}
+
 
 });
