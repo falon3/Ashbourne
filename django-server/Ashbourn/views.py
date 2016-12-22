@@ -5,10 +5,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.shortcuts import render_to_response, render, redirect
 from django.template import loader
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import Point, WKTWriter, MultiPolygon
 from itertools import chain
 from vectorformats.Formats import Django, GeoJSON
-from geojson import Feature, Point, FeatureCollection
+from geojson import Feature, FeatureCollection
+from shapely.geometry import mapping, shape
 import dateutil.parser
 import datetime
 import geojson
@@ -41,25 +42,37 @@ def map_view(request):
     person_hash = request.GET.get('person_hash')
     person = Person.objects.get(hash=person_hash)
     
-    # get activity points from 'Location' axctivities for this person
+    feature_points = {}
+    feature_fences = {}
+    wkt_w = WKTWriter()
+
+    act_count = 1
+    # get activity details from 'Location' activities for this person
     loc_activities = Activity.objects.filter(person=person,category="Location")
     loc_list = list(loc_activities)
-    feature_points = []
     for l in loc_list:
-        my_feature = Feature(geometry=Point((float(l.locLon), float(l.locLat)), srid=3857))
-        feature_points.append(my_feature)
-    collection = FeatureCollection(feature_points)
+        # if hit a known location just add that not the points
+        if l.location:
+            wkt_fence = wkt_w.write(l.location.fence)
+            feature_points[str(l.location.name)] = {'feature': wkt_fence, 'address': str(l.location.address), 'description': str(l.location.description), 'person': str(l.person.name)}
+        else:
+            pnt = Point((float(l.locLon), float(l.locLat)), srid=3857)
+            wkt_feat = wkt_w.write(pnt)
+            feature_points['Activity- ' + str(act_count)] = {'feature': wkt_feat, 'time': str(l.time), 'locLat': str(l.locLat), 'locLon': str(l.locLon), 'category': str(l.category), 'person': str(l.person.name)}
+            act_count += 1
 
-    # get known locations for this person
-    fences = Location.objects.filter(person__hash=person_hash)
-    djf = Django.Django(geodjango='fence', properties=['name'])
-    geoj = GeoJSON.GeoJSON() 
-    my_geojson = geoj.encode(djf.decode(fences))
+    # get additional known locations details for this person
+    fences = list(Location.objects.filter(person__hash=person_hash))
+    for f in fences:
+        wkt_fence = wkt_w.write(f.fence)
+        if f.name not in feature_points.keys():
+           feature_fences[str(f.name)] = {'feature': wkt_fence, 'address': str(f.address), 'description': str(f.description), 'person': str(f.person.name)}
+
 
     template = loader.get_template('MapView.html')
     # send all the data back
     return JsonResponse(
-        {'html': template.render({'locations': my_geojson, 'title': "Activity Map for " + person.name, 'point_collection': collection}, request)}
+        {'html': template.render({'locations': feature_fences, 'title': "Activity Map for " + person.name, 'point_collection': feature_points }, request)}
     )
 
 @csrf_exempt
@@ -78,7 +91,7 @@ def add_record_view(request):
     
     # check if hit a geofence location
     if not location_name:
-        pnt = Point(float(locLon), float(locLat))
+        pnt = Point(float(locLon), float(locLat), srid=3857)
         fence_loc = Location.objects.filter(fence__contains=pnt)[0]
         if fence_loc:
             location_name = fence_loc[0].name

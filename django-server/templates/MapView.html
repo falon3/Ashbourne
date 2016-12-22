@@ -9,53 +9,17 @@
 <script>
  
     var map; 
-    function show_fences(layer, point_vectors){    
-        var wkt_f = new OpenLayers.Format.WKT();
-
-        //console.log( {{locations|safe}});
-        var data = {{locations|safe}}.features; // each geofence from the API
-
-        // Build a WKT format string object for each polygon
-        // example string accepted : "MULTIPOLYGON (((-12636817.93468799814582 7078279.020049697719514,-12635117.2108089979738 7079635.777301598340273)))";
-        for (var k = 0; k < data.length; k++){
-            var fence = data[k].geometry;
-            var wkt_builder = [];
-            wkt_builder.push(fence.type + "( ");
-            var coords = fence.coordinates[0][0];
-            for (var j = 0; j < coords.length; j++){
-                var position = new OpenLayers.LonLat(coords[j])
-                    wkt_builder.push(position.toShortString().replace(/,/g , "") + ", ");
-            }
-            wkt_builder.push(")");
-
-            // now can read the wkt string and add the features
-            var geom_feats = wkt_f.read(wkt_builder.join(""));
-            layer.addFeatures([geom_feats]);
-        }
-
-    }
-
-    function show_points(point_vectors){
-        var wkt_f = new OpenLayers.Format.WKT();
-        var points = {{point_collection|safe}}.features; // each point from activity
-
-        // Build a WKT format string object for the location point in each activity
-        for (var k = 0; k < points.length; k++){
-            var pnt = points[k].geometry;
-            var wkt_builder = [];
-            wkt_builder.push(pnt.type + "( ");
-            for (var j = 0; j < points.length; j++){
-                var position = new OpenLayers.LonLat(pnt.coordinates)
-                    wkt_builder.push(position.toShortString().replace(/,/g , "") + ", ");
-            }
-            wkt_builder.push(")");
-
-            // now can read the wkt string and add the points
-            var geom = wkt_f.read(wkt_builder.join(""));
-            point_vectors.addFeatures([geom]);
+    // draws vector shapes on specified layer. data in wkt string format. example:
+    // MULTIPOLYGON (((-12638268.5812490005046129 7081697.4326630001887679, -12637389.5554239992052317 7081582.7771206004545093)))
+    function show_vectors(layer, data){    
+        var wkt_f = new OpenLayers.Format.WKT(); 
+        keys = Object.keys(data);
+        for (var i = 0; i < keys.length; i++){
+            var geom = wkt_f.read(data[keys[i]].feature);
+            //geom.set('description', data[keys[i]] )
+            layer.addFeatures([geom]);
         }
     }
- 
  
     function init(){
         //var Edmonton_LonLat = [-113.49566,53.52646]; // in EPSG:4326 
@@ -78,20 +42,25 @@
         var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
         var zoom           = 14;
         
-        // polygon layer
-        var layer = new OpenLayers.Layer.Vector("geo fences");
+        // home polygon fences layer  
+        var layer = new OpenLayers.Layer.Vector("Other locations");
         map.addLayer(layer);
-        show_fences(layer);
+        var data = {{locations|safe}}; // each location dict including wkt polygon
+        show_vectors(layer, data);
 
-        // points from activities
-        var point_vectors = new OpenLayers.Layer.Vector("points path");
+        // journey from activities layer
+        var s = new OpenLayers.Style({
+            'pointRadius': 3, 'strokeColor':'green', 'fillColor':'green', 'fillOpacity': 0.4
+        });
+        var path_style = new OpenLayers.StyleMap(s);
+        var point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style});
         map.addLayer(point_vectors);
-        show_points(point_vectors);
+        var points = {{point_collection|safe}}; // each activity dict including wkt point
+        show_vectors(point_vectors, points);
         
         // zoom center and add toggles
         map.addControl(new OpenLayers.Control.LayerSwitcher());
-        map.setCenter(position, zoom );
-        
+        map.setCenter(position, zoom );        
     }
 
  

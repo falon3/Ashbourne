@@ -9,7 +9,7 @@ from django.contrib.gis.geos import Point
 class Location(models.Model):
     # Regular Django fields corresponding to the attributes in the
     # world borders shapefile.
-    name = models.CharField(max_length=50, default='')
+    name = models.CharField(max_length=50, default='', unique=True)
     address = models.CharField(max_length=30)
     fence = models.MultiPolygonField(srid=3857)
     description = models.CharField(max_length=50)
@@ -80,7 +80,7 @@ class Activity(models.Model):
 
         # see if in geofence
         if not self.location:
-            pnt = Point(float(self.locLon), float(self.locLat))
+            pnt = Point(float(self.locLon), float(self.locLat), srid=3857)
             fence_loc = Location.objects.filter(fence__contains=pnt)
             if fence_loc:
                 self.location = fence_loc[0]
