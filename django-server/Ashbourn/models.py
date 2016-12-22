@@ -71,6 +71,7 @@ class Activity(models.Model):
 
     def __str__(self):
         return "%s %s - %s" % (str(self.time), self.person.__str__(), self.activity_type)
+
     def save(self, *args, **kwargs):
         # if no lat/lon then made from admin point selector
         if self.adminPoint:
@@ -83,7 +84,6 @@ class Activity(models.Model):
             fence_loc = Location.objects.filter(fence__contains=pnt)
             if fence_loc:
                 self.location = fence_loc[0]
-
         super(Activity, self).save(*args, **kwargs)  
 
     class Meta:

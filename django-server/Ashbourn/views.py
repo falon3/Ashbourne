@@ -78,7 +78,6 @@ def add_record_view(request):
     
     # check if hit a geofence location
     if not location_name:
-        print("here")
         pnt = Point(float(locLon), float(locLat))
         fence_loc = Location.objects.filter(fence__contains=pnt)[0]
         if fence_loc:
