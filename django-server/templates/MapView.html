@@ -11,13 +11,53 @@
     var map; 
     // draws vector shapes on specified layer. data in wkt string format. example:
     // MULTIPOLYGON (((-12638268.5812490005046129 7081697.4326630001887679, -12637389.5554239992052317 7081582.7771206004545093)))
-    function show_vectors(layer, data){    
+    function show_vectors(layer, data){ 
         var wkt_f = new OpenLayers.Format.WKT(); 
-        keys = Object.keys(data);
-        for (var i = 0; i < keys.length; i++){
-            var geom = wkt_f.read(data[keys[i]].feature);
-            //geom.set('description', data[keys[i]] )
-            layer.addFeatures([geom]);
+        //var keys = Object.keys(data);
+        console.log(data)
+        var pointList = [];
+        for (var i = 0; i < data.length; i++){
+            var shape_type = data[i].feature.substr(0, data[i].feature.indexOf(" "));
+            if (shape_type == 'MULTIPOLYGON'){
+                var geom = wkt_f.read(data[i].feature);
+                geom.attributes = {
+                    'name': data[i].name,
+                    'age': 20,
+                    'favColor': 'white',
+                    'align': "cm",
+                    'xOffset': 0,
+                    'yOffset': -15
+                };
+                console.log(shape_type, geom);
+                layer.addFeatures([geom]);
+                layer.drawFeature(geom);
+                continue;
+            }
+            else if (shape_type == 'POINT'){              
+                var coords = data[i].feature.replace(/[`~!@#$%^&*()_|+\=?;:'",<>\{\}\[\]\\\/]/gi, '').split(' ');
+                var path_pnt = new OpenLayers.Geometry.Point(coords[1], coords[2]);
+                console.log("path point: ", path_pnt);
+                pointList.push(path_pnt);
+            }
+            //if at end of points or after two points
+            if (pointList.length > 1 || i == data.length) {
+                line = new OpenLayers.Geometry.LineString(pointList);
+                var feature = new OpenLayers.Feature.Vector(line);
+                console.log("FEATURE", feature);
+                feature.attributes = {
+                    'name': '',
+                    'favColor': 'white',
+                    'align': "cm",
+                    'xOffset': 0,
+                    'yOffset': -50
+                };
+                last = pointList[1];
+                pointList = [];
+                pointList.push(last);
+                layer.addFeatures([feature]);
+                layer.drawFeature(feature);
+            }
+           
         }
     }
  
@@ -43,14 +83,27 @@
         var zoom           = 14;
         
         // home polygon fences layer  
-        var layer = new OpenLayers.Layer.Vector("Other locations");
-        map.addLayer(layer);
+        var other_locs = new OpenLayers.Layer.Vector("Other locations");    
+        map.addLayer(other_locs);
         var data = {{locations|safe}}; // each location dict including wkt polygon
-        show_vectors(layer, data);
+        show_vectors(other_locs, data);
 
         // journey from activities layer
         var s = new OpenLayers.Style({
-            'pointRadius': 3, 'strokeColor':'green', 'fillColor':'green', 'fillOpacity': 0.4
+            'pointRadius': 3, 
+            'strokeColor':"green", 
+            'fillColor':"green", 
+            'fillOpacity': 0.4, 
+            'label': "${name}",
+            'fontColor': "${favColor}",
+            'fontSize': "12px",
+            'fontFamily': "Courier New, monospace",
+            'fontWeight': "bold",
+            'labelAlign': "${align}",
+            'labelOutlineColor': "black",
+            'labelOutlineWidth': 3,
+            'labelXOffset': "${xOffset}",
+            'labelYOffset': "${yOffset}"
         });
         var path_style = new OpenLayers.StyleMap(s);
         var point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style});

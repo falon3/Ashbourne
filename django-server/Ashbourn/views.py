@@ -14,6 +14,7 @@ import dateutil.parser
 import datetime
 import geojson
 import json
+import collections
 
 
 # projection transformation for coords
@@ -42,37 +43,59 @@ def map_view(request):
     person_hash = request.GET.get('person_hash')
     person = Person.objects.get(hash=person_hash)
     
-    feature_points = {}
-    feature_fences = {}
+    feature_points = collections.OrderedDict()
+    feature_fences = collections.OrderedDict()
     wkt_w = WKTWriter()
 
     act_count = 1
     # get activity details from 'Location' activities for this person
-    loc_activities = Activity.objects.filter(person=person,category="Location")
+    loc_activities = Activity.objects.filter(person=person,category="Location").order_by('time')
     loc_list = list(loc_activities)
     for l in loc_list:
-        # if hit a known location just add that not the points
+        # if hit a known location add location and only one point
         if l.location:
+            if str(l.location.name) in feature_points.keys():
+                continue
             wkt_fence = wkt_w.write(l.location.fence)
-            feature_points[str(l.location.name)] = {'feature': wkt_fence, 'address': str(l.location.address), 'description': str(l.location.description), 'person': str(l.person.name)}
-        else:
-            pnt = Point((float(l.locLon), float(l.locLat)), srid=3857)
-            wkt_feat = wkt_w.write(pnt)
-            feature_points['Activity- ' + str(act_count)] = {'feature': wkt_feat, 'time': str(l.time), 'locLat': str(l.locLat), 'locLon': str(l.locLon), 'category': str(l.category), 'person': str(l.person.name)}
-            act_count += 1
+            feature_points[str(l.location.name)] = {
+                'name':str(l.location.name), 
+                'feature': wkt_fence,
+                'time': str(l.time),
+                'address': str(l.location.address), 
+                'description': str(l.location.description), 
+                'person': str(l.person.name)}
+
+        pnt = Point((float(l.locLon), float(l.locLat)), srid=3857)
+        wkt_feat = wkt_w.write(pnt)
+        feature_points['Activity - ' + str(act_count)] = {
+            'name' : 'Activity - ' + str(act_count),
+            'feature': wkt_feat, 
+            'time': str(l.time), 
+            'locLat': str(l.locLat), 
+            'locLon': str(l.locLon), 
+            'category': str(l.category), 
+            'person': str(l.person.name)}
+
+        act_count += 1
 
     # get additional known locations details for this person
     fences = list(Location.objects.filter(person__hash=person_hash))
     for f in fences:
         wkt_fence = wkt_w.write(f.fence)
         if f.name not in feature_points.keys():
-           feature_fences[str(f.name)] = {'feature': wkt_fence, 'address': str(f.address), 'description': str(f.description), 'person': str(f.person.name)}
+           feature_fences[str(f.name)] = {
+               'name' : str(f.name),
+               'feature': wkt_fence, 
+               'address': str(f.address), 
+               'description': str(f.description), 
+               'person': str(f.person.name)}
 
-
+    #print("fences:", feature_fences)
+    #print("points", feature_points)
     template = loader.get_template('MapView.html')
     # send all the data back
     return JsonResponse(
-        {'html': template.render({'locations': feature_fences, 'title': "Activity Map for " + person.name, 'point_collection': feature_points }, request)}
+        {'html': template.render({'locations': sorted(feature_fences.iteritems()), 'title': "Activity Map for " + person.name, 'point_collection': sorted(feature_points.iteritems())}, request)}
     )
 
 @csrf_exempt
