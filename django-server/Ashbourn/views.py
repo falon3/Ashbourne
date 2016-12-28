@@ -94,8 +94,18 @@ def map_view(request):
     #print("points", feature_points)
     template = loader.get_template('MapView.html')
     # send all the data back
+    loc_activities = loc_activities.exclude(location__name=None).order_by('time')
+    context = {}
+    context['known_locations'] = sorted(feature_fences.iteritems())
+    context['title'] = "Activity Map for " + person.name
+    context['point_collection'] = sorted(feature_points.iteritems())
+    context['selectperson'] = person
+    context['location'] = 'all'
+    context['time_from'] = 'all'
+    context['time_to'] = 'now'
+    context['query_result'] = loc_activities
     return JsonResponse(
-        {'html': template.render({'locations': sorted(feature_fences.iteritems()), 'title': "Activity Map for " + person.name, 'point_collection': sorted(feature_points.iteritems())}, request)}
+        {'html': template.render(context, request)}
     )
 
 @csrf_exempt
@@ -111,13 +121,6 @@ def add_record_view(request):
     location_name = request.POST.get('location', '')
     locLon = request.POST.get('locLat','')
     locLat = request.POST.get('locLon','')
-    
-    # check if hit a geofence location
-    if not location_name:
-        pnt = Point(float(locLon), float(locLat), srid=3857)
-        fence_loc = Location.objects.filter(fence__contains=pnt)[0]
-        if fence_loc:
-            location_name = fence_loc[0].name
 
     # if locLon, locLat intersect with a Location fence then add that to activity too
     if location_name != '':

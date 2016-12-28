@@ -1,5 +1,5 @@
 
-<link rel="stylesheet" type="text/css" href="/static/admin/css/base.css" />
+
 <script type="text/javascript" src="/static/admin/js/vendor/jquery/jquery.js"></script>
 <script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
 <script type="text/javascript" src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
@@ -14,17 +14,22 @@
     function show_vectors(layer, data){ 
         var wkt_f = new OpenLayers.Format.WKT(); 
         //var keys = Object.keys(data);
-        console.log(data)
+        console.log("DATA: ", data)
         var pointList = [];
         for (var i = 0; i < data.length; i++){
             var shape_type = data[i].feature.substr(0, data[i].feature.indexOf(" "));
             if (shape_type == 'MULTIPOLYGON'){
                 var geom = wkt_f.read(data[i].feature);
+                label = data[i].name
+                if (data[i].time){
+                    var time = new Date(data[i].time);
+                    time = time.toLocaleDateString() + "\n" + time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    console.log(typeof data[i].time);
+                    label = label + "\n\n" + time;
+                }
                 geom.attributes = {
-                    'name': data[i].name,
+                    'label': label,
                     'age': 20,
-                    'favColor': 'white',
-                    'align': "cm",
                     'xOffset': 0,
                     'yOffset': -15
                 };
@@ -45,11 +50,9 @@
                 var feature = new OpenLayers.Feature.Vector(line);
                 console.log("FEATURE", feature);
                 feature.attributes = {
-                    'name': '',
-                    'favColor': 'white',
-                    'align': "cm",
-                    'xOffset': 0,
-                    'yOffset': -50
+                    'label': '',
+                    'dash': "dot",
+                    'strokeWidth': 3,
                 };
                 last = pointList[1];
                 pointList = [];
@@ -83,23 +86,40 @@
         var zoom           = 14;
         
         // home polygon fences layer  
-        var other_locs = new OpenLayers.Layer.Vector("Other locations");    
+        var h = new OpenLayers.Style({
+            'strokeColor':"orange",
+            'fillColor':"orange", 
+            'fillOpacity': 0.4, 
+            'label': "${label}",
+            'fontColor': "white",
+            'fontSize': "12px",
+            'fontFamily': "Courier New, monospace",
+            'fontWeight': "bold",
+            'labelAlign': "cm",
+            'labelOutlineColor': "black",
+            'labelOutlineWidth': 3,
+            'labelXOffset': "${xOffset}",
+            'labelYOffset': "${yOffset}"
+        });
+        var home_style = new OpenLayers.StyleMap(h);
+        var other_locs = new OpenLayers.Layer.Vector("Other locations", {styleMap: home_style});    
         map.addLayer(other_locs);
-        var data = {{locations|safe}}; // each location dict including wkt polygon
+        var data = {{known_locations|safe}}; // each location dict including wkt polygon
         show_vectors(other_locs, data);
 
         // journey from activities layer
         var s = new OpenLayers.Style({
-            'pointRadius': 3, 
-            'strokeColor':"green", 
+            'strokeColor':"green",
+            'strokeWidth': "${strokeWidth}",
             'fillColor':"green", 
             'fillOpacity': 0.4, 
-            'label': "${name}",
-            'fontColor': "${favColor}",
+            'label': "${label}",
+            'fontColor': "white",
             'fontSize': "12px",
             'fontFamily': "Courier New, monospace",
             'fontWeight': "bold",
-            'labelAlign': "${align}",
+            'labelAlign': "cm",
+            'strokeDashstyle': "${dash}",
             'labelOutlineColor': "black",
             'labelOutlineWidth': 3,
             'labelXOffset': "${xOffset}",
@@ -122,7 +142,9 @@
 
  }); 
 
-</script>        
+</script>  
+<link rel="stylesheet" type="text/css" href="/static/admin/css/bootstrap-datetimepicker.css">  
+<link rel="stylesheet" type="text/css" href="/static/admin/css/base.css" />    
     <span class="mapview">
         <h2 style="text-align:center;" >{{title}}</h2>
         <style type="text/css">
@@ -133,6 +155,9 @@
          }
         </style>
         <div id="map">
-        </div>
-        
+        </div>        
     </span>
+    
+    <div>
+    {% include "filtered_activity_table.html" %}
+    </div>

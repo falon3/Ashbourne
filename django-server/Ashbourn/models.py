@@ -4,6 +4,7 @@ import math
 from django.core.validators import RegexValidator
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Point
+from django.utils import timezone
 
 
 class Location(models.Model):
@@ -84,6 +85,7 @@ class Activity(models.Model):
             fence_loc = Location.objects.filter(fence__contains=pnt)
             if fence_loc:
                 self.location = fence_loc[0]
+
         super(Activity, self).save(*args, **kwargs)  
 
     class Meta:
