@@ -1,5 +1,5 @@
 
-<link rel="stylesheet" type="text/css" href="/static/admin/css/base.css" />
+
 <script type="text/javascript" src="/static/admin/js/vendor/jquery/jquery.js"></script>
 <script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
 <script type="text/javascript" src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
@@ -9,55 +9,64 @@
 <script>
  
     var map; 
-    function show_fences(layer, point_vectors){    
-        var wkt_f = new OpenLayers.Format.WKT();
-
-        //console.log( {{locations|safe}});
-        var data = {{locations|safe}}.features; // each geofence from the API
-
-        // Build a WKT format string object for each polygon
-        // example string accepted : "MULTIPOLYGON (((-12636817.93468799814582 7078279.020049697719514,-12635117.2108089979738 7079635.777301598340273)))";
-        for (var k = 0; k < data.length; k++){
-            var fence = data[k].geometry;
-            var wkt_builder = [];
-            wkt_builder.push(fence.type + "( ");
-            var coords = fence.coordinates[0][0];
-            for (var j = 0; j < coords.length; j++){
-                var position = new OpenLayers.LonLat(coords[j])
-                    wkt_builder.push(position.toShortString().replace(/,/g , "") + ", ");
+    // draws vector shapes on specified layer. data in wkt string format. example:
+    // MULTIPOLYGON (((-12638268.5812490005046129 7081697.4326630001887679, -12637389.5554239992052317 7081582.7771206004545093)))
+    function show_vectors(layer, data){ 
+        var wkt_f = new OpenLayers.Format.WKT(); 
+        //var keys = Object.keys(data);
+        console.log("DATA: ", data)
+        var pointList = [];
+        for (var i = 0; i < data.length; i++){
+            var shape_type = data[i].feature.substr(0, data[i].feature.indexOf(" "));
+            if (shape_type == 'MULTIPOLYGON'){
+                var geom = wkt_f.read(data[i].feature);
+                label = data[i].name
+                if (data[i].time){
+                    var time = new Date(data[i].time);
+                    time = time.toLocaleDateString() + "\n" + time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    console.log(typeof data[i].time);
+                    label = label + "\n\n" + time;
+                }
+                geom.attributes = {
+                    'label': label,
+                    'age': 20,
+                    'xOffset': 0,
+                    'yOffset': -15
+                };
+                console.log(shape_type, geom);
+                layer.addFeatures([geom]);
+                layer.drawFeature(geom);
+                continue;
             }
-            wkt_builder.push(")");
-
-            // now can read the wkt string and add the features
-            var geom_feats = wkt_f.read(wkt_builder.join(""));
-            layer.addFeatures([geom_feats]);
-        }
-
-    }
-
-    function show_points(point_vectors){
-        var wkt_f = new OpenLayers.Format.WKT();
-        var points = {{point_collection|safe}}.features; // each point from activity
-        for (var k = 0; k < points.length; k++){
-            var pnt = points[k].geometry;
-            var wkt_builder = [];
-            wkt_builder.push(pnt.type + "( ");
-            for (var j = 0; j < points.length; j++){
-                var position = new OpenLayers.LonLat(pnt.coordinates)
-                    wkt_builder.push(position.toShortString().replace(/,/g , "") + ", ");
+            else if (shape_type == 'POINT'){              
+                var coords = data[i].feature.replace(/[`~!@#$%^&*()_|+\=?;:'",<>\{\}\[\]\\\/]/gi, '').split(' ');
+                var path_pnt = new OpenLayers.Geometry.Point(coords[1], coords[2]);
+                console.log("path point: ", path_pnt);
+                pointList.push(path_pnt);
             }
-            wkt_builder.push(")");
-
-            // now can read the wkt string and add the points
-            var geom = wkt_f.read(wkt_builder.join(""));
-            point_vectors.addFeatures([geom]);
+            //if at end of points or after two points
+            if (pointList.length > 1 || i == data.length) {
+                line = new OpenLayers.Geometry.LineString(pointList);
+                var feature = new OpenLayers.Feature.Vector(line);
+                console.log("FEATURE", feature);
+                feature.attributes = {
+                    'label': '',
+                    'dash': "dot",
+                    'strokeWidth': 3,
+                };
+                last = pointList[1];
+                pointList = [];
+                pointList.push(last);
+                layer.addFeatures([feature]);
+                layer.drawFeature(feature);
+            }
+           
         }
     }
- 
  
     function init(){
         //var Edmonton_LonLat = [-113.49566,53.52646]; // in EPSG:4326 
-        var Edmonton_LonLat = [-12636511, 7078908]; // in EPSG:900913
+        var Edmonton_LonLat = [-12636511, 7078908]; // in EPSG:3857
         var options = {
             'units' : "m",
             'maxResolution' : 156543.0339,
@@ -76,20 +85,55 @@
         var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
         var zoom           = 14;
         
-        // polygon layer
-        var layer = new OpenLayers.Layer.Vector("geo fences");
-        map.addLayer(layer);
-        show_fences(layer);
+        // home polygon fences layer  
+        var h = new OpenLayers.Style({
+            'strokeColor':"orange",
+            'fillColor':"orange", 
+            'fillOpacity': 0.4, 
+            'label': "${label}",
+            'fontColor': "white",
+            'fontSize': "12px",
+            'fontFamily': "Courier New, monospace",
+            'fontWeight': "bold",
+            'labelAlign': "cm",
+            'labelOutlineColor': "black",
+            'labelOutlineWidth': 3,
+            'labelXOffset': "${xOffset}",
+            'labelYOffset': "${yOffset}"
+        });
+        var home_style = new OpenLayers.StyleMap(h);
+        var other_locs = new OpenLayers.Layer.Vector("Other locations", {styleMap: home_style});    
+        map.addLayer(other_locs);
+        var data = {{known_locations|safe}}; // each location dict including wkt polygon
+        show_vectors(other_locs, data);
 
-        // points from activities
-        var point_vectors = new OpenLayers.Layer.Vector("points path");
+        // journey from activities layer
+        var s = new OpenLayers.Style({
+            'strokeColor':"green",
+            'strokeWidth': "${strokeWidth}",
+            'fillColor':"green", 
+            'fillOpacity': 0.4, 
+            'label': "${label}",
+            'fontColor': "white",
+            'fontSize': "12px",
+            'fontFamily': "Courier New, monospace",
+            'fontWeight': "bold",
+            'labelAlign': "cm",
+            'strokeDashstyle': "${dash}",
+            'labelOutlineColor': "black",
+            'labelOutlineWidth': 3,
+            'labelXOffset': "${xOffset}",
+            'labelYOffset': "${yOffset}"
+        });
+        var path_style = new OpenLayers.StyleMap(s);
+        var point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style});
         map.addLayer(point_vectors);
-        show_points(point_vectors);
+        var points = {{point_collection|safe}}; // each activity dict including wkt point
+        show_vectors(point_vectors, points);
         
         // zoom center and add toggles
         map.addControl(new OpenLayers.Control.LayerSwitcher());
-        map.setCenter(position, zoom );
-        
+        map.setCenter(position, zoom );        
     }
 
  
@@ -98,7 +142,8 @@
 
  }); 
 
-</script>        
+</script>  
+ 
     <span class="mapview">
         <h2 style="text-align:center;" >{{title}}</h2>
         <style type="text/css">
@@ -109,6 +154,9 @@
          }
         </style>
         <div id="map">
-        </div>
-        
+        </div>        
     </span>
+    
+    <div>
+    {% include "filtered_activity_table.html" %}
+    </div>
