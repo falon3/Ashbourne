@@ -8,7 +8,6 @@
 
 <script>
  
-    var map; 
     // draws vector shapes on specified layer. data in wkt string format. example:
     // MULTIPOLYGON (((-12638268.5812490005046129 7081697.4326630001887679, -12637389.5554239992052317 7081582.7771206004545093)))
     function show_vectors(layer, data){ 
@@ -21,12 +20,12 @@
             if (shape_type == 'MULTIPOLYGON'){
                 var geom = wkt_f.read(data[i].feature);
                 label = data[i].name
-                if (data[i].time){
-                    var time = new Date(data[i].time);
-                    time = time.toLocaleDateString() + "\n" + time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    console.log(typeof data[i].time);
-                    label = label + "\n\n" + time;
-                }
+                /* if (data[i].time){
+                   var time = new Date(data[i].time);
+                   time = time.toLocaleDateString() + "\n" + time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                   console.log(typeof data[i].time);
+                   label = label + "\n\n" + time;
+                   } */
                 geom.attributes = {
                     'label': label,
                     'age': 20,
@@ -64,17 +63,9 @@
         }
     }
  
-    function init(){
+    function init(map){
         //var Edmonton_LonLat = [-113.49566,53.52646]; // in EPSG:4326 
         var Edmonton_LonLat = [-12636511, 7078908]; // in EPSG:3857
-        var options = {
-            'units' : "m",
-            'maxResolution' : 156543.0339,
-            'numZoomLevels' : 20,
-            'projection' : new OpenLayers.Projection("EPSG:3857"),
-            'maxExtent' : new OpenLayers.Bounds(-17037508,40000000,-5000000,12020000)
-        };
-        map = new OpenLayers.Map('map', options);
         
         //base layer
         var OSM_layer = new OpenLayers.Layer.OSM("OpenStreet Map");
@@ -138,7 +129,28 @@
 
  
  $(document).ready(function () {
-     init();
+     var options = {
+         'target': "map",
+         'units' : "m",
+         'maxResolution' : 156543.0339,
+         'numZoomLevels' : 20,
+         'projection' : new OpenLayers.Projection("EPSG:3857"),
+         'maxExtent' : new OpenLayers.Bounds(-17037508,40000000,-5000000,12020000)
+     };
+     var map = new OpenLayers.Map('map', options); 
+
+     init(map);
+
+     // display popup on click
+     map.events.register("click", map, function(e) {
+         console.log(e);
+         var lonlat = map.getLonLatFromViewPortPx(e.xy);
+         alert("You clicked near " + lonlat.lat + " N, " +
+             + lonlat.lon + " E");
+
+         
+        }); 
+
 
  }); 
 
@@ -149,7 +161,7 @@
         <style type="text/css">
          #map {
              width: 100%;
-             height: 90%;
+             height: 80%;
              margin: 10;
          }
         </style>
