@@ -68,8 +68,6 @@ def map_view(request):
                'description': str(f.description), 
                'person': str(f.person.name)}
 
-    #print("fences:", feature_fences)
-    #print("points", feature_points)
     template = loader.get_template('MapView.html')
     # send all the data back
     loc_activities = loc_activities.exclude(location__name=None).order_by('time')
@@ -88,17 +86,17 @@ def map_view(request):
 
 @csrf_exempt
 def add_record_view(request):
-    hash = request.POST['hash']
+    watch_id =  request.POST.get('watch_id', '')[1:] # strip the # sign
     activity_type = request.POST.get('activity_type', '')
     text = request.POST.get('text', '')
     call_duration = request.POST.get('call_duration','')
     to_from = request.POST.get('to_from','')
-    person = Person.objects.get(hash=hash)
+    person = Person.objects.get(watch_id=watch_id)
     time = dateutil.parser.parse(request.POST.get('time', ''))
     category = request.POST.get('category', '')
     location_name = request.POST.get('location', '')
-    locLon = request.POST.get('locLat','')
-    locLat = request.POST.get('locLon','')
+    locLon = request.POST.get('locLon','')
+    locLat = request.POST.get('locLat','')
 
     # if locLon, locLat intersect with a Location fence then add that to activity too
     if location_name != '':
