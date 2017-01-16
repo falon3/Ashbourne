@@ -110,7 +110,6 @@ def add_record_view(request):
                                 to_from=to_from,locLon=locLon,locLat=locLat)
 
     return JsonResponse({'message': 'record added! yoohoo!'})
-    # return render(request,'add_record.html')
 
 @csrf_exempt
 def get_locations(request):
