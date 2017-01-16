@@ -4,7 +4,7 @@ import math
 from django.core.validators import RegexValidator
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Point
-
+from pyproj import Proj, transform
 
 class Location(models.Model):
     # Regular Django fields corresponding to the attributes in the
@@ -78,12 +78,16 @@ class Activity(models.Model):
             self.locLat =  self.adminPoint.y
             self.locLon =  self.adminPoint.x
 
-        # see if in geofence
-        if not self.location:
-            pnt = Point(float(self.locLon), float(self.locLat), srid=3857)
-            fence_loc = Location.objects.filter(fence__contains=pnt)
-            if fence_loc:
-                self.location = fence_loc[0]
+        else:
+            inProj = Proj(init='epsg:4326')
+            outProj = Proj(init='epsg:3857')
+            self.locLon,self.locLat = transform(inProj,outProj,float(self.locLon),float(self.locLat))
+            pnt = Point(self.locLon, self.locLat, srid=3857)
+            # see if in geofence
+            if not self.location:
+                fence_loc = Location.objects.filter(fence__contains=pnt)
+                if fence_loc:
+                    self.location = fence_loc[0]
 
         super(Activity, self).save(*args, **kwargs)  
 
