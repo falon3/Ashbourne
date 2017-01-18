@@ -25,48 +25,57 @@ def map_view(request):
     feature_fences = collections.OrderedDict()
     wkt_w = WKTWriter()
 
-    act_count = 1
+    activity = 1
     # get activity details from 'Location' activities for this person
     loc_activities = Activity.objects.filter(person=person,category="Location").order_by('time')
     loc_list = list(loc_activities)
+    locs_added = set()
+    j = 0
+    journeys = [[]] # build list of lists of separate journeys to then add to ordered dict of features for template to draw
     for l in loc_list:
-        # if hit a known location add location and only one point
+        # if hit a known location add location not point
         if l.location:
-            if str(l.location.name) in feature_points.keys():
-                continue
-            wkt_fence = wkt_w.write(l.location.fence)
-            feature_points[str(l.location.name)] = {
-                'name':str(l.location.name), 
-                'feature': wkt_fence,
-                'time': str(l.time),
-                'address': str(l.location.address), 
-                'description': str(l.location.description), 
-                'person': str(l.person.name)}
+            if str(l.location.name) not in locs_added:
+                wkt_fence = wkt_w.write(l.location.fence)
+                journeys[j].append({
+                    'name':str(l.location.name), 
+                    'feature': wkt_fence,
+                    'time': str(l.time),
+                    'address': str(l.location.address), 
+                    'description': str(l.location.description), 
+                    'person': str(l.person.name)})
+                locs_added.add(str(l.location.name))
+            j += 1
+            journeys.append([]) # hit a known location so start next journey list
 
-        pnt = Point((float(l.locLon), float(l.locLat)), srid=3857)
-        wkt_feat = wkt_w.write(pnt)
-        feature_points['Activity - ' + str(act_count)] = {
-            'name' : 'Activity - ' + str(act_count),
-            'feature': wkt_feat, 
-            'time': str(l.time), 
-            'locLat': str(l.locLat), 
-            'locLon': str(l.locLon), 
-            'category': str(l.category), 
-            'person': str(l.person.name)}
-
-        act_count += 1
+        else:
+            pnt = Point((float(l.locLon), float(l.locLat)), srid=3857)
+            wkt_feat = wkt_w.write(pnt)
+            #feature_points['Activity - ' + str(activity)] = {
+            journeys[j].append({
+                'name' : 'Journey - ' + str(j),
+                'feature': wkt_feat, 
+                'time': str(l.time), 
+                'locLat': str(l.locLat), 
+                'locLon': str(l.locLon), 
+                'category': str(l.category), 
+                'person': str(l.person.name)})
+    
+    for i in range(0,len(journeys)):
+        if len(journeys[i]) > 0:
+            feature_points["journey "+str(i)] = journeys[i]
 
     # get additional known locations details for this person
     fences = list(Location.objects.filter(person__hash=person_hash))
     for f in fences:
         wkt_fence = wkt_w.write(f.fence)
         if f.name not in feature_points.keys():
-           feature_fences[str(f.name)] = {
+           feature_fences[str(f.name)] = [{
                'name' : str(f.name),
                'feature': wkt_fence, 
                'address': str(f.address), 
                'description': str(f.description), 
-               'person': str(f.person.name)}
+               'person': str(f.person.name)}]
 
     template = loader.get_template('MapView.html')
     # send all the data back
@@ -84,6 +93,7 @@ def map_view(request):
         {'html': template.render(context, request)}
     )
 
+# watch data from emails is added by callng this method
 @csrf_exempt
 def add_record_view(request):
     watch_id =  request.POST.get('watch_id', '')[1:] # strip the # sign

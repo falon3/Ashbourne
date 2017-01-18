@@ -12,55 +12,60 @@
     // MULTIPOLYGON (((-12638268.5812490005046129 7081697.4326630001887679, -12637389.5554239992052317 7081582.7771206004545093)))
     function show_vectors(layer, data){ 
         var wkt_f = new OpenLayers.Format.WKT(); 
-        //var keys = Object.keys(data);
-        console.log("DATA: ", data)
-        var pointList = [];
-        for (var i = 0; i < data.length; i++){
-            var shape_type = data[i].feature.substr(0, data[i].feature.indexOf(" "));
-            if (shape_type == 'MULTIPOLYGON'){
-                var geom = wkt_f.read(data[i].feature);
-                label = data[i].name
-                /* if (data[i].time){
-                   var time = new Date(data[i].time);
-                   time = time.toLocaleDateString() + "\n" + time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                   console.log(typeof data[i].time);
-                   label = label + "\n\n" + time;
-                   } */
-                geom.attributes = {
-                    'label': label,
-                    'age': 20,
-                    'xOffset': 0,
-                    'yOffset': -15
-                };
-                console.log(shape_type, geom);
-                layer.addFeatures([geom]);
-                layer.drawFeature(geom);
-                continue;
-            }
-            else if (shape_type == 'POINT'){              
-                var coords = data[i].feature.replace(/[`~!@#$%^&*()_|+\=?;:'",<>\{\}\[\]\\\/]/gi, '').split(' ');
-                var path_pnt = new OpenLayers.Geometry.Point(coords[1], coords[2]);
-                console.log("path point: ", path_pnt);
-                pointList.push(path_pnt);
-            }
-            //if at end of points or after two points
-            if (pointList.length > 1 || i == data.length) {
-                line = new OpenLayers.Geometry.LineString(pointList);
-                var feature = new OpenLayers.Feature.Vector(line);
-                console.log("FEATURE", feature);
-                feature.attributes = {
-                    'label': '',
-                    'dash': "dot",
-                    'strokeWidth': 3,
-                };
-                last = pointList[1];
-                pointList = [];
-                pointList.push(last);
-                layer.addFeatures([feature]);
-                layer.drawFeature(feature);
-            }
-           
-        }
+        //console.log("DATA: ", data)
+        
+        // iterate through each journey
+        data.forEach(function(journey) {
+            //console.log("Journey", journey);
+            var pointList = [];
+            // add each path for each journey separately
+            //for (var place = 0; place < journey.length; place++){
+            journey.forEach(function(place) {
+                var shape_type = place.feature.substr(0, place.feature.indexOf(" "));
+                //if (shape_type == 'MULTIPOLYGON'){
+                    var geom = wkt_f.read(place.feature);
+                    //console.log(geom);
+                    label = place.name
+                    
+                    geom.attributes = {
+                        'label': '',
+                        'xOffset': 0,
+                        'yOffset': -15,
+                        'strokeWidth': 2,
+                    };
+                    //console.log(shape_type, geom);
+                    layer.addFeatures([geom]);
+                    layer.drawFeature(geom);
+                    
+                //}
+                if (shape_type == 'MULTIPOLYGON') pointList = [];
+                else if (shape_type == 'POINT'){  
+                    
+                    var coords = place.feature.replace(/[`~!@#$%^&*()_|+\=?;:'",<>\{\}\[\]\\\/]/gi, '').split(' ');
+                    var path_pnt = new OpenLayers.Geometry.Point(coords[1], coords[2]);
+                    //console.log("path point: ", path_pnt);
+                    pointList.push(path_pnt);
+                }
+                //console.log("pointlist", pointList);
+                //if at end of points or after two points
+                if (pointList.length > 1) { // || i == data.length) {
+                    line = new OpenLayers.Geometry.LineString(pointList);
+                    var feature = new OpenLayers.Feature.Vector(line);
+                    //console.log("FEATURE", feature);
+                    feature.attributes = {
+                        'label': '',
+                        'dash': "dash",
+                        'strokeWidth': 2,
+                    };
+                    last = pointList[1];
+                    pointList = [];
+                    pointList.push(last);
+                    
+                    layer.addFeatures([feature]);
+                    layer.drawFeature(feature);
+                }
+            });
+        });
     }
  
     function init(map){
@@ -101,6 +106,7 @@
         // journey from activities layer
         var s = new OpenLayers.Style({
             'strokeColor':"green",
+            'pointRadius': 2,
             'strokeWidth': "${strokeWidth}",
             'fillColor':"green", 
             'fillOpacity': 0.4, 
@@ -118,8 +124,10 @@
         });
         var path_style = new OpenLayers.StyleMap(s);
         var point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style});
+        console.log(point_vectors);
         map.addLayer(point_vectors);
-        var points = {{point_collection|safe}}; // each activity dict including wkt point
+        var points = {{point_collection|safe}}; // each activity dict including wkt features
+        //console.log(points);
         show_vectors(point_vectors, points);
         
         // zoom center and add toggles
@@ -143,7 +151,7 @@
 
      // display popup on click
      map.events.register("click", map, function(e) {
-         console.log(e);
+         //console.log(e);
          var lonlat = map.getLonLatFromViewPortPx(e.xy);
          alert("You clicked near " + lonlat.lat + " N, " +
              + lonlat.lon + " E");
