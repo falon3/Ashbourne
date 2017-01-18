@@ -93,9 +93,11 @@ def map_view(request):
         {'html': template.render(context, request)}
     )
 
+# handles POST to /add_record/
 # watch data from emails is added by callng this method
 @csrf_exempt
 def add_record_view(request):
+    print request
     watch_id =  request.POST.get('watch_id', '')[1:] # strip the # sign
     activity_type = request.POST.get('activity_type', '')
     text = request.POST.get('text', '')

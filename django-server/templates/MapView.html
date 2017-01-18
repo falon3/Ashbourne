@@ -54,7 +54,7 @@
                     //console.log("FEATURE", feature);
                     feature.attributes = {
                         'label': '',
-                        'dash': "dash",
+                        'dash': "solid",
                         'strokeWidth': 2,
                     };
                     last = pointList[1];
@@ -70,7 +70,7 @@
  
     function init(map){
         //var Edmonton_LonLat = [-113.49566,53.52646]; // in EPSG:4326 
-        var Edmonton_LonLat = [-12636511, 7078908]; // in EPSG:3857
+        var Edmonton_LonLat = [-12635985, 7079780]; // in EPSG:3857
         
         //base layer
         var OSM_layer = new OpenLayers.Layer.OSM("OpenStreet Map");
@@ -79,7 +79,7 @@
         OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);         
         
         var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
-        var zoom           = 14;
+        var zoom           = 16;
         
         // home polygon fences layer  
         var h = new OpenLayers.Style({
@@ -141,7 +141,7 @@
          'target': "map",
          'units' : "m",
          'maxResolution' : 156543.0339,
-         'numZoomLevels' : 20,
+         'numZoomLevels' : 25,
          'projection' : new OpenLayers.Projection("EPSG:3857"),
          'maxExtent' : new OpenLayers.Bounds(-17037508,40000000,-5000000,12020000)
      };
@@ -153,8 +153,13 @@
      map.events.register("click", map, function(e) {
          //console.log(e);
          var lonlat = map.getLonLatFromViewPortPx(e.xy);
-         alert("You clicked near " + lonlat.lat + " N, " +
-             + lonlat.lon + " E");
+         var toProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+         var fromProjection   = new OpenLayers.Projection("EPSG:3857"); // to Spherical Mercator Projection
+         var alternate_position       = new OpenLayers.LonLat(lonlat.lon,lonlat.lat).transform( fromProjection, toProjection);
+
+         alert("You clicked near " + lonlat.lon + " E, " +
+             + lonlat.lat + " N" + " or: '" + 
+               alternate_position.lon + "', '" + alternate_position.lat + "'");
 
          
         }); 
