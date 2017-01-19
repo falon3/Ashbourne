@@ -77,4 +77,4 @@ Setup:
       > $ python manage.py migrate --run-syncdb                         
                
 
-## To get watch notifications from email and sent to this server, see this [separate repo](https://github.com/falon3/MailServer/tree/master)
+## To get watch notifications from email and sent to this server, see this [separate MailServer repository](https://github.com/falon3/MailServer/tree/master)
