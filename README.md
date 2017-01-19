@@ -1,5 +1,4 @@
-# Ashbourn
-Main Django project located in django-server directory    
+# Ashbourn   
 
 Setup:
 * Clone this repository     
@@ -77,5 +76,5 @@ Setup:
       May need to try this one too or if if that last one doesn't work:                                      
       > $ python manage.py migrate --run-syncdb                         
                
-                                                                             
-* Alexandr Folder is separate project code being considered being encorporated into the Ashbourn project
+
+## To get watch notifications from email and sent to this server, see this [separate MailServer repository](https://github.com/falon3/MailServer/tree/master)
