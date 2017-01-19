@@ -33,6 +33,14 @@ def map_view(request):
     j = 0
     journeys = [[]] # build list of lists of separate journeys to then add to ordered dict of features for template to draw
     for l in loc_list:
+        pnt = Point(float(l.locLon),float(l.locLat), srid=3857)
+        # see if in geofence but needs to be updated
+        if not l.location:
+            fence_loc = Location.objects.filter(fence__contains=pnt)
+            if fence_loc:
+                l.location = fence_loc[0]
+                l.update()
+
         # if hit a known location add location not point
         if l.location:
             if str(l.location.name) not in locs_added:
@@ -51,7 +59,6 @@ def map_view(request):
         else:
             pnt = Point((float(l.locLon), float(l.locLat)), srid=3857)
             wkt_feat = wkt_w.write(pnt)
-            #feature_points['Activity - ' + str(activity)] = {
             journeys[j].append({
                 'name' : 'Journey - ' + str(j),
                 'feature': wkt_feat, 
@@ -69,7 +76,6 @@ def map_view(request):
     fences = list(Location.objects.filter(person__hash=person_hash))
     for f in fences:
         wkt_fence = wkt_w.write(f.fence)
-        #if f.name not in feature_points.keys():
         feature_fences[str(f.name)] = [{
             'name' : str(f.name),
             'feature': wkt_fence, 

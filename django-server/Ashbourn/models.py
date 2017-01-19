@@ -73,7 +73,7 @@ class Activity(models.Model):
         return "%s %s - %s" % (str(self.time), self.person.__str__(), self.activity_type)
 
     def save(self, *args, **kwargs):
-        # if no lat/lon then made from admin point selector
+        
         if self.adminPoint:
             self.locLat =  self.adminPoint.y
             self.locLon =  self.adminPoint.x
@@ -81,15 +81,21 @@ class Activity(models.Model):
         else:
             inProj = Proj(init='epsg:4326')
             outProj = Proj(init='epsg:3857')
-            self.locLon,self.locLat = transform(inProj,outProj,float(self.locLon),float(self.locLat))
-            pnt = Point(self.locLon, self.locLat, srid=3857)
-            # see if in geofence
-            if not self.location:
-                fence_loc = Location.objects.filter(fence__contains=pnt)
-                if fence_loc:
-                    self.location = fence_loc[0]
+            try:
+                self.locLon,self.locLat = transform(inProj,outProj,float(self.locLon),float(self.locLat))
+                pnt = Point(self.locLon, self.locLat, srid=3857)
+                # see if in geofence
+                if not self.location:
+                    fence_loc = Location.objects.filter(fence__contains=pnt)
+                    if fence_loc:
+                        self.location = fence_loc[0]
+            except Exception as e:
+                print(e) # must be in correct coord system
+        
+        super(Activity, self).save(*args, **kwargs) 
 
-        super(Activity, self).save(*args, **kwargs)  
+    def update(self, *args, **kwargs):
+        super(Activity, self).save(*args, **kwargs)
 
     class Meta:
         verbose_name = 'Activity'
