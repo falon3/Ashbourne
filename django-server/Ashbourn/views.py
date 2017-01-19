@@ -69,13 +69,13 @@ def map_view(request):
     fences = list(Location.objects.filter(person__hash=person_hash))
     for f in fences:
         wkt_fence = wkt_w.write(f.fence)
-        if f.name not in feature_points.keys():
-           feature_fences[str(f.name)] = [{
-               'name' : str(f.name),
-               'feature': wkt_fence, 
-               'address': str(f.address), 
-               'description': str(f.description), 
-               'person': str(f.person.name)}]
+        #if f.name not in feature_points.keys():
+        feature_fences[str(f.name)] = [{
+            'name' : str(f.name),
+            'feature': wkt_fence, 
+            'address': str(f.address), 
+            'description': str(f.description), 
+            'person': str(f.person.name)}]
 
     template = loader.get_template('MapView.html')
     # send all the data back

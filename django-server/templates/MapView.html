@@ -16,10 +16,8 @@
         
         // iterate through each journey
         data.forEach(function(journey) {
-            //console.log("Journey", journey);
             var pointList = [];
             // add each path for each journey separately
-            //for (var place = 0; place < journey.length; place++){
             journey.forEach(function(place) {
                 var shape_type = place.feature.substr(0, place.feature.indexOf(" "));
                 //if (shape_type == 'MULTIPOLYGON'){
@@ -29,29 +27,29 @@
                     
                     geom.attributes = {
                         'label': '',
+                        'color': "orange",
                         'xOffset': 0,
                         'yOffset': -15,
                         'strokeWidth': 2,
+                        'title': label,
+                        'owner': place.person,
+                        'category': place.category,
                     };
                     //console.log(shape_type, geom);
                     layer.addFeatures([geom]);
                     layer.drawFeature(geom);
                     
-                //}
                 if (shape_type == 'MULTIPOLYGON') pointList = [];
                 else if (shape_type == 'POINT'){  
                     
                     var coords = place.feature.replace(/[`~!@#$%^&*()_|+\=?;:'",<>\{\}\[\]\\\/]/gi, '').split(' ');
                     var path_pnt = new OpenLayers.Geometry.Point(coords[1], coords[2]);
-                    //console.log("path point: ", path_pnt);
                     pointList.push(path_pnt);
                 }
-                //console.log("pointlist", pointList);
                 //if at end of points or after two points
                 if (pointList.length > 1) { // || i == data.length) {
                     line = new OpenLayers.Geometry.LineString(pointList);
                     var feature = new OpenLayers.Feature.Vector(line);
-                    //console.log("FEATURE", feature);
                     feature.attributes = {
                         'label': '',
                         'dash': "solid",
@@ -68,74 +66,117 @@
         });
     }
  
-    function init(map){
-        //var Edmonton_LonLat = [-113.49566,53.52646]; // in EPSG:4326 
-        var Edmonton_LonLat = [-12635985, 7079780]; // in EPSG:3857
-        
-        //base layer
-        var OSM_layer = new OpenLayers.Layer.OSM("OpenStreet Map");
-        map.addLayer(OSM_layer);
+ function init(map){
+     //var Edmonton_LonLat = [-113.49566,53.52646]; // in EPSG:4326 
+     var Edmonton_LonLat = [-12635985, 7079780]; // in EPSG:3857
+     
+     //base layer
+     var OSM_layer = new OpenLayers.Layer.OSM("OpenStreet Map");
+     map.addLayer(OSM_layer);
 
-        OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);         
-        
-        var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
-        var zoom           = 16;
-        
-        // home polygon fences layer  
-        var h = new OpenLayers.Style({
-            'strokeColor':"orange",
-            'fillColor':"orange", 
-            'fillOpacity': 0.4, 
-            'label': "${label}",
-            'fontColor': "white",
-            'fontSize': "12px",
-            'fontFamily': "Courier New, monospace",
-            'fontWeight': "bold",
-            'labelAlign': "cm",
-            'labelOutlineColor': "black",
-            'labelOutlineWidth': 3,
-            'labelXOffset': "${xOffset}",
-            'labelYOffset': "${yOffset}"
-        });
-        var home_style = new OpenLayers.StyleMap(h);
-        var other_locs = new OpenLayers.Layer.Vector("Other locations", {styleMap: home_style});    
-        map.addLayer(other_locs);
-        var data = {{known_locations|safe}}; // each location dict including wkt polygon
-        show_vectors(other_locs, data);
+     OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);         
+     
+     var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
+     var zoom           = 16;
+     
+     // home polygon fences layer  
+     var h = new OpenLayers.Style({
+         'strokeColor':"${color}",
+         'fillColor':"orange", 
+         'fillOpacity': 0.4, 
+         'label': "${label}",
+         'fontColor': "white",
+         'fontSize': "12px",
+         'fontFamily': "Courier New, monospace",
+         'fontWeight': "bold",
+         'labelAlign': "cm",
+         'labelOutlineColor': "black",
+         'labelOutlineWidth': 3,
+         'labelXOffset': "${xOffset}",
+         'labelYOffset': "${yOffset}"
+     });
+     var home_style = new OpenLayers.StyleMap(h);
+     var other_locs = new OpenLayers.Layer.Vector("Other locations", {
+         styleMap: home_style, 
+         
+     });    
+     map.addLayer(other_locs);
+     var data = {{known_locations|safe}}; // each location dict including wkt polygon
+     show_vectors(other_locs, data);
 
-        // journey from activities layer
-        var s = new OpenLayers.Style({
-            'strokeColor':"green",
-            'pointRadius': 2,
-            'strokeWidth': "${strokeWidth}",
-            'fillColor':"green", 
-            'fillOpacity': 0.4, 
-            'label': "${label}",
-            'fontColor': "white",
-            'fontSize': "12px",
-            'fontFamily': "Courier New, monospace",
-            'fontWeight': "bold",
-            'labelAlign': "cm",
-            'strokeDashstyle': "${dash}",
-            'labelOutlineColor': "black",
-            'labelOutlineWidth': 3,
-            'labelXOffset': "${xOffset}",
-            'labelYOffset': "${yOffset}"
-        });
-        var path_style = new OpenLayers.StyleMap(s);
-        var point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style});
-        console.log(point_vectors);
-        map.addLayer(point_vectors);
-        var points = {{point_collection|safe}}; // each activity dict including wkt features
-        //console.log(points);
-        show_vectors(point_vectors, points);
-        
-        // zoom center and add toggles
-        map.addControl(new OpenLayers.Control.LayerSwitcher());
-        map.setCenter(position, zoom );        
-    }
+     // journey from activities layer
+     var s = new OpenLayers.Style({
+         'strokeColor':"green",
+         'pointRadius': 2,
+         'strokeWidth': "${strokeWidth}",
+         'fillColor':"green", 
+         'fillOpacity': 0.4, 
+         'label': "${label}",
+         'fontColor': "white",
+         'fontSize': "12px",
+         'fontFamily': "Courier New, monospace",
+         'fontWeight': "bold",
+         'labelAlign': "cm",
+         'strokeDashstyle': "${dash}",
+         'labelOutlineColor': "black",
+         'labelOutlineWidth': 3,
+         'labelXOffset': "${xOffset}",
+         'labelYOffset': "${yOffset}"
+     });
+     var path_style = new OpenLayers.StyleMap(s);
+     var point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style});
+     console.log(point_vectors);
+     map.addLayer(point_vectors);
+     var points = {{point_collection|safe}}; // each activity dict including wkt features
+     show_vectors(point_vectors, points);
+     
+     // zoom center and add toggles
+     map.addControl(new OpenLayers.Control.LayerSwitcher());
+     map.setCenter(position, zoom );  
 
- 
+
+     selectFeature = new OpenLayers.Control.SelectFeature(
+         other_locs,
+         {
+             onSelect: clickNotice,
+             click: true,
+             autoActivate: true,
+             multiple: true
+         }
+     );
+     map.addControl(selectFeature);
+
+     // detect click events onlocations
+     function clickNotice(feat) {
+         console.log(feat, feat.attributes);
+         var midside = feat.geometry.bounds.right - (feat.geometry.bounds.right - feat.geometry.bounds.left)/2;
+         var midtop = feat.geometry.bounds.top - (feat.geometry.bounds.top - feat.geometry.bounds.bottom)/2;
+         feat.attributes.color = "black";
+         other_locs.redraw();
+         var popup = new OpenLayers.Popup.FramedCloud(
+             "popup", 
+             new OpenLayers.LonLat(midside, midtop),
+             new OpenLayers.Size(150,150),
+             feat.attributes.title + "\nKnown inhabitant: " + feat.attributes.owner + "\nCategory: " + feat.attributes.category,
+             null, true, function(){
+                 onPopupClose(feat);            
+             });  
+         console.log(popup);
+         popup.maxSize = new OpenLayers.Size(150, 150);
+         popup.minSize = new OpenLayers.Size(150, 150);
+         feat.popup = popup;
+         map.addPopup(popup);
+         
+     } 
+     function onPopupClose(feat) {
+         console.log(feat);
+         feat.attributes.color = "orange";
+         map.removePopup(feat.popup);
+         feat.popup.destroy();
+         other_locs.redraw();
+     }
+}   
+
  $(document).ready(function () {
      var options = {
          'target': "map",
@@ -149,22 +190,17 @@
 
      init(map);
 
-     // display popup on click
-     map.events.register("click", map, function(e) {
-         //console.log(e);
-         var lonlat = map.getLonLatFromViewPortPx(e.xy);
-         var toProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
-         var fromProjection   = new OpenLayers.Projection("EPSG:3857"); // to Spherical Mercator Projection
-         var alternate_position       = new OpenLayers.LonLat(lonlat.lon,lonlat.lat).transform( fromProjection, toProjection);
+     // display popup of coords on click (FOR DEVELOPING DEBUGGING)
+     /* map.events.register("click", map, function(e) {
+        var lonlat = map.getLonLatFromViewPortPx(e.xy);
+        var toProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+        var fromProjection   = new OpenLayers.Projection("EPSG:3857"); // to Spherical Mercator Projection
+        var alternate_position       = new OpenLayers.LonLat(lonlat.lon,lonlat.lat).transform( fromProjection, toProjection);
 
-         alert("You clicked near " + lonlat.lon + " E, " +
-             + lonlat.lat + " N" + " or: '" + 
-               alternate_position.lon + "', '" + alternate_position.lat + "'");
-
-         
-        }); 
-
-
+        alert("You clicked near " + lonlat.lon + " E, " +
+        + lonlat.lat + " N" + " or: '" + 
+        alternate_position.lon + "', '" + alternate_position.lat + "'");      
+        });  */
  }); 
 
 </script>  
