@@ -20,24 +20,24 @@
             // add each path for each journey separately
             journey.forEach(function(place) {
                 var shape_type = place.feature.substr(0, place.feature.indexOf(" "));
-                //if (shape_type == 'MULTIPOLYGON'){
-                    var geom = wkt_f.read(place.feature);
-                    //console.log(geom);
-                    label = place.name
-                    
-                    geom.attributes = {
-                        'label': '',
-                        'color': "orange",
-                        'xOffset': 0,
-                        'yOffset': -15,
-                        'strokeWidth': 2,
-                        'title': label,
-                        'owner': place.person,
-                        'category': place.category,
-                    };
-                    //console.log(shape_type, geom);
-                    layer.addFeatures([geom]);
-                    layer.drawFeature(geom);
+                var geom = wkt_f.read(place.feature);
+                if (place.time != null) var time = place.time;
+                else var time = ''
+                geom.attributes = {
+                    'label': '',
+                    'color': "orange",
+                    'highlight': "0.4",
+                    'xOffset': 0,
+                    'yOffset': -15,
+                    'strokeWidth': 2,
+                    'title': place.name,
+                    'time': time,
+                    'owner': place.person,
+                    'category': place.category,
+                };
+                //console.log(shape_type, geom);
+                layer.addFeatures([geom]);
+                layer.drawFeature(geom);
                     
                 if (shape_type == 'MULTIPOLYGON') pointList = [];
                 else if (shape_type == 'POINT'){  
@@ -107,10 +107,10 @@
      // journey from activities layer
      var s = new OpenLayers.Style({
          'strokeColor':"green",
-         'pointRadius': 2,
+         'pointRadius': 4,
          'strokeWidth': "${strokeWidth}",
          'fillColor':"green", 
-         'fillOpacity': 0.4, 
+         'fillOpacity': "${highlight}", 
          'label': "${label}",
          'fontColor': "white",
          'fontSize': "12px",
@@ -125,7 +125,7 @@
      });
      var path_style = new OpenLayers.StyleMap(s);
      var point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style});
-     console.log(point_vectors);
+     //console.log(point_vectors);
      map.addLayer(point_vectors);
      var points = {{point_collection|safe}}; // each activity dict including wkt features
      show_vectors(point_vectors, points);
@@ -134,9 +134,8 @@
      map.addControl(new OpenLayers.Control.LayerSwitcher());
      map.setCenter(position, zoom );  
 
-
      selectFeature = new OpenLayers.Control.SelectFeature(
-         other_locs,
+         [other_locs, point_vectors], 
          {
              onSelect: clickNotice,
              click: true,
@@ -148,32 +147,56 @@
 
      // detect click events onlocations
      function clickNotice(feat) {
-         console.log(feat, feat.attributes);
-         var midside = feat.geometry.bounds.right - (feat.geometry.bounds.right - feat.geometry.bounds.left)/2;
-         var midtop = feat.geometry.bounds.top - (feat.geometry.bounds.top - feat.geometry.bounds.bottom)/2;
-         feat.attributes.color = "black";
-         other_locs.redraw();
+
+         if (feat.layer.name == "Activities path") {
+             feat.attributes.highlight = "0.8"; 
+             point_vectors.redraw();
+             
+         }
+         else {
+             feat.attributes.color = "black"; 
+             other_locs.redraw();
+         }
+         if (feat.geometry.x == null) { // then we have a polygon or linestring
+             if (feat.geometry.components.length > 1) return; // skip linestring
+             var poplon = feat.geometry.bounds.right - (feat.geometry.bounds.right - feat.geometry.bounds.left)/2;
+             var poplat = feat.geometry.bounds.top - (feat.geometry.bounds.top - feat.geometry.bounds.bottom)/2;
+             var message = "<center>" + feat.attributes.title + "</center>" + "</br> Person: " + feat.attributes.owner + "</br>Category: " + feat.attributes.category;
+         }
+         else  { // we have a point    
+             var poplon = feat.geometry.x;
+             var poplat = feat.geometry.y;
+    var message = "<center>" + feat.attributes.time + "</center>";
+         }
+         
          var popup = new OpenLayers.Popup.FramedCloud(
              "popup", 
-             new OpenLayers.LonLat(midside, midtop),
-             new OpenLayers.Size(150,150),
-             feat.attributes.title + "\nKnown inhabitant: " + feat.attributes.owner + "\nCategory: " + feat.attributes.category,
+             new OpenLayers.LonLat(poplon, poplat),
+             new OpenLayers.Size(50,100),
+             message,
              null, true, function(){
                  onPopupClose(feat);            
              });  
          console.log(popup);
-         popup.maxSize = new OpenLayers.Size(150, 150);
-         popup.minSize = new OpenLayers.Size(150, 150);
+         popup.maxSize = new OpenLayers.Size(400, 350);
+         popup.minSize = new OpenLayers.Size(50, 50);
          feat.popup = popup;
          map.addPopup(popup);
          
      } 
      function onPopupClose(feat) {
          console.log(feat);
-         feat.attributes.color = "orange";
+         if (feat.layer.name == "Activities path") {
+             feat.attributes.highlight = "0.4"; 
+             point_vectors.redraw();
+         }
+         else {
+             feat.attributes.color = "orange"; 
+             other_locs.redraw();
+         }
          map.removePopup(feat.popup);
          feat.popup.destroy();
-         other_locs.redraw();
+         
      }
 }   
 
