@@ -147,7 +147,7 @@
 
      // detect click events onlocations
      function clickNotice(feat) {
-
+         //console.log(feat.geometry.getType())
          if (feat.layer.name == "Activities path") {
              feat.attributes.highlight = "0.8"; 
              point_vectors.redraw();
