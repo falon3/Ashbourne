@@ -12,17 +12,18 @@
     // MULTIPOLYGON (((-12638268.5812490005046129 7081697.4326630001887679, -12637389.5554239992052317 7081582.7771206004545093)))
     function show_vectors(layer, data){ 
         var wkt_f = new OpenLayers.Format.WKT(); 
-        //console.log("DATA: ", data)
+        var seen_ids = [];
         
         // iterate through each journey
         data.forEach(function(journey) {
             var pointList = [];
             // add each path for each journey separately
             journey.forEach(function(place) {
+                
                 var shape_type = place.feature.substr(0, place.feature.indexOf(" "));
                 var geom = wkt_f.read(place.feature);
                 if (place.time != null) var time = place.time;
-                else var time = ''
+                else var time = '';
                 geom.attributes = {
                     'label': '',
                     'color': "orange",
@@ -35,13 +36,19 @@
                     'owner': place.person,
                     'category': place.category,
                 };
-                //console.log(shape_type, geom);
-                layer.addFeatures([geom]);
-                layer.drawFeature(geom);
+                console.log(shape_type, place, seen_ids);
+                if (shape_type == 'MULTIPOLYGON'){
+                    if (seen_ids.indexOf(place.id) == -1){
+                        layer.addFeatures([geom]);
+                        layer.drawFeature(geom);
+                        seen_ids.push(place.id);
+                        }
+                }
                     
-                if (shape_type == 'MULTIPOLYGON') pointList = [];
-                else if (shape_type == 'POINT'){  
-                    
+                //if (shape_type == 'MULTIPOLYGON') pointList = []; //dont need this?
+                if (shape_type == 'POINT'){  
+                    layer.addFeatures([geom]);
+                    layer.drawFeature(geom);
                     var coords = place.feature.replace(/[`~!@#$%^&*()_|+\=?;:'",<>\{\}\[\]\\\/]/gi, '').split(' ');
                     var path_pnt = new OpenLayers.Geometry.Point(coords[1], coords[2]);
                     pointList.push(path_pnt);
@@ -185,7 +192,7 @@
          
      } 
      function onPopupClose(feat) {
-         console.log(feat);
+         //console.log(feat);
          if (feat.layer.name == "Activities path") {
              feat.attributes.highlight = "0.4"; 
              point_vectors.redraw();
@@ -214,16 +221,16 @@
      init(map);
 
      // display popup of coords on click (FOR DEVELOPING DEBUGGING)
-     /* map.events.register("click", map, function(e) {
-        var lonlat = map.getLonLatFromViewPortPx(e.xy);
-        var toProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
-        var fromProjection   = new OpenLayers.Projection("EPSG:3857"); // to Spherical Mercator Projection
-        var alternate_position       = new OpenLayers.LonLat(lonlat.lon,lonlat.lat).transform( fromProjection, toProjection);
+     map.events.register("click", map, function(e) {
+         var lonlat = map.getLonLatFromViewPortPx(e.xy);
+         var toProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+         var fromProjection   = new OpenLayers.Projection("EPSG:3857"); // to Spherical Mercator Projection
+         var alternate_position       = new OpenLayers.LonLat(lonlat.lon,lonlat.lat).transform( fromProjection, toProjection);
 
-        alert("You clicked near " + lonlat.lon + " E, " +
-        + lonlat.lat + " N" + " or: '" + 
-        alternate_position.lon + "', '" + alternate_position.lat + "'");      
-        });  */
+         alert("You clicked near " + lonlat.lon + " E, " +
+             + lonlat.lat + " N" + " or: '" + 
+               alternate_position.lon + "', '" + alternate_position.lat + "'");      
+     }); 
  }); 
 
 </script>  

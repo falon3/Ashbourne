@@ -5,7 +5,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.shortcuts import render_to_response, render, redirect
 from django.template import loader
-from django.contrib.gis.geos import Point, WKTWriter, MultiPolygon
+from django.contrib.gis.geos import GEOSGeometry, Point, WKTWriter, MultiPolygon
+from shapely.geometry import MultiLineString
 from itertools import chain
 from vectorformats.Formats import Django, GeoJSON
 from geojson import Feature, FeatureCollection
@@ -15,6 +16,19 @@ import datetime
 import geojson
 import json
 import collections
+    
+def point_map_record(num, feat, point, activity, category = None):
+    if not category:
+        category = str(activity.category)
+    point_record = {
+        'name' : 'Journey - ' + str(num),
+        'feature': feat, 
+        'time': str(activity.time), 
+        'locLat': str(point.y), 
+        'locLon': str(point.x), 
+        'category': category, 
+        'person': str(activity.person.name)}
+    return point_record
 
 @csrf_exempt
 def map_view(request):
@@ -41,32 +55,82 @@ def map_view(request):
                 l.location = fence_loc[0]
                 l.update()
 
-        # if hit a known location add location not point
+        # if hit a known location add nearest boundary points too
         if l.location:
-            if str(l.location.name) not in locs_added:
+            # add the location, then add the ENTRY boundary point
+            if str(l.location.name):
+                # may need exit point from last location 
+                if len(journeys[j]) == 0 and  j > 0: 
+                    print "FIRST journeys last place: ", journeys[j-1][-2]
+                    print "\n\n\n\n\n\n\n\n"
+                    last_place = journeys[j-1][-2]
+                    boundary = GEOSGeometry(last_place['feature']).boundary
+                    opt_dist = boundary.distance(pnt)
+                    multiline = MultiLineString(boundary.coords)
+                    # get point on multiline at that distance
+                    exitpnt = multiline.interpolate(opt_dist) 
+                    wkt_feat = exitpnt.wkt
+                    to_add = point_map_record(j, wkt_feat, exitpnt, l, "exit place")
+                    journeys[j].append(to_add) 
+
+                # add current polygon location
                 wkt_fence = wkt_w.write(l.location.fence)
                 journeys[j].append({
                     'name':str(l.location.name), 
+                    'id': str(l.location.id),
                     'feature': wkt_fence,
                     'time': str(l.time),
                     'address': str(l.location.address), 
                     'description': str(l.location.description), 
                     'person': str(l.person.name)})
                 locs_added.add(str(l.location.name))
-            j += 1
-            journeys.append([]) # hit a known location so start next journey list
+
+                # add optimal entry point used for this location
+                # case 1: 1st activity recorded use center of location as entry
+                if j == 0:
+                    pnt = l.location.fence.centroid
+                    wkt_feat = wkt_w.write(pnt)
+                    to_add = point_map_record(j, wkt_feat, pnt, l, "center point")
+                    journeys[j].append(to_add)
+
+                # case 2: get entry point based on last recorded location
+                else:
+                    last = journeys[j][-2] # last point before location (could be exit)
+                    last_pnt = Point(float(last['locLon']),float(last['locLat']), srid=3857)           
+                    boundary = l.location.fence.boundary
+                    opt_dist = boundary.distance(last_pnt)
+                    multiline = MultiLineString(boundary.coords)
+                    # get point on multiline at that distance
+                    entry = multiline.interpolate(opt_dist) 
+                    wkt_feat = entry.wkt
+                    to_add = point_map_record(j, wkt_feat, entry, l, "enter location")
+                    journeys[j].append(to_add)
+    
+            
+            if len(journeys[j])>0:
+                # hit a hit location so start next journey list
+                journeys.append([]) 
+                j += 1
 
         else:
             pnt = Point((float(l.locLon), float(l.locLat)), srid=3857)
+            # may need exit point from last location to this current point
+            if len(journeys[j]) == 0 and  j > 0: 
+                print "journeys last place: ", journeys[j-1][-2]
+                print "\n\n\n\n\n\n\n\n\n"
+                last_place = journeys[j-1][-2]
+                boundary = GEOSGeometry(last_place['feature']).boundary
+                opt_dist = boundary.distance(pnt)
+                multiline = MultiLineString(boundary.coords)
+                # get point on multiline at that distance
+                exitpnt = multiline.interpolate(opt_dist) 
+                wkt_feat = exitpnt.wkt
+                to_add = point_map_record(j, wkt_feat, exitpnt, l, "exit_place")
+                journeys[j].append(to_add) 
+  
             wkt_feat = wkt_w.write(pnt)
-            journeys[j].append({
-                'name' : 'Journey - ' + str(j),
-                'feature': wkt_feat, 
-                'time': str(l.time), 
-                'locLat': str(l.locLat), 
-                'locLon': str(l.locLon), 
-                'category': str(l.category), 
-                'person': str(l.person.name)})
+            reg_point =  point_map_record(j, wkt_feat, pnt, l)
+            journeys[j].append(reg_point)
     
     for i in range(0,len(journeys)):
         if len(journeys[i]) > 0:
@@ -78,6 +142,7 @@ def map_view(request):
         wkt_fence = wkt_w.write(f.fence)
         feature_fences[str(f.name)] = [{
             'name' : str(f.name),
+            'id': str(f.id),
             'feature': wkt_fence, 
             'address': str(f.address), 
             'description': str(f.description), 
@@ -103,7 +168,6 @@ def map_view(request):
 # watch data from emails is added by callng this method
 @csrf_exempt
 def add_record_view(request):
-    print request
     watch_id =  request.POST.get('watch_id', '')[1:] # strip the # sign
     activity_type = request.POST.get('activity_type', '')
     text = request.POST.get('text', '')
