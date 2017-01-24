@@ -21,7 +21,6 @@
             var time_spent = {enter: null, exit: null};
             // add each path for each journey separately
             journey.forEach(function(place) {
-                console.log(time_spent);
                 if (place == journey[0] && !!last_exit){
                     pointList.push(last_exit);
                 }
@@ -37,19 +36,17 @@
                 else var time = '';
                 if (place.act_type == 'enter location'){
                     time_spent.enter = new Date(place.time);
-                    console.log("YOOOOOO", time_spent.enter)
                 }
                 if (place.act_type == 'exit place'){
-                    time_spent.exit = new Date(place.time);
-                    var minutes = Math.floor(((time_spent.exit.getTime() - time_spent.enter.getTime()) / (1000 * 60))%60);//.toString();
-                    var hours = Math.floor(((time_spent.exit.getTime() - time_spent.enter.getTime()) / (1000 * 60 * 60))).toString();
-                    console.log("befre:", time_spent);
-                    console.log( "Name: ", place.name, layer);
-                    
+                    time_spent.exit = new Date(place.time);     
+                    // keep track of total time spent there in millis 
                     var place_update = layer.getFeaturesByAttribute('title', place.name);
-                    console.log(place_update);
-                    
-                    place_update[0].attributes.time = hours + " hours, " + minutes + " minutes";// + (time_spent.exit.getTime() - time_spent.enter.getTime())/_MS_PER_HOUR.toString();
+                    if (place_update[0].attributes.time != ''){
+                        place_update[0].attributes.time = place_update[0].attributes.time + (time_spent.exit.getTime() - time_spent.enter.getTime());
+                    }
+                    else {
+                        place_update[0].attributes.time = time_spent.exit.getTime() - time_spent.enter.getTime();
+                    }
                     layer.drawFeature(place_update[0]);
                     //console.log( place_update.attributes.time);
                 }
@@ -211,14 +208,16 @@
              if (feat.geometry.components.length > 1) return; // skip linestring
              var poplon = feat.geometry.bounds.right - (feat.geometry.bounds.right - feat.geometry.bounds.left)/2;
              var poplat = feat.geometry.bounds.top - (feat.geometry.bounds.top - feat.geometry.bounds.bottom)/2;
+
+             var time_string = formatTime(feat.attributes.time);
              var message = "<center>" + feat.attributes.title + "</center>" + "</br> Person: " 
                          + feat.attributes.owner + "</br>Category: " + feat.attributes.category
-                         + "</br>Time here: " + feat.attributes.time;
+                         + "</br>Total Time spent here: " + time_string;
          }
          else  { // we have a point    
              var poplon = feat.geometry.x;
              var poplat = feat.geometry.y;
-    var message = "<center>" + feat.attributes.time + "</center>";
+             var message = "<center>" + feat.attributes.time + "</center>";
          }
          
          var popup = new OpenLayers.Popup.FramedCloud(
@@ -249,6 +248,13 @@
          map.removePopup(feat.popup);
          feat.popup.destroy();
          
+     }
+
+     function formatTime(millis) {
+         var minutes = Math.floor((millis/(1000 * 60))%60);
+         var hours = Math.floor(millis/(1000 * 60 * 60));
+         var time_string = hours + " hours, " + minutes + " minutes";
+         return time_string;
      }
 }   
 
