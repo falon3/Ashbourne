@@ -16,9 +16,7 @@ import geojson
 import json
 import collections
     
-def point_map_record(name, feat, point, activity, act_type, category = None):
-    if not category:
-        category = str(activity.category)
+def point_map_record(name, feat, point, activity, act_type):
 
     point_record = {
         'name' : name,
@@ -26,21 +24,23 @@ def point_map_record(name, feat, point, activity, act_type, category = None):
         'time': str(activity.time), 
         'locLat': str(point.y), 
         'locLon': str(point.x), 
-        'category': category,
+        'category': str(activity.category),
         'act_type': act_type,
         'person': str(activity.person.name)}
-    print str(activity.time), act_type
-    print "\n\n\n"
+
     return point_record
 
 def geofence_record(activity, fence, an_activity, time = '', person = ''):
     if an_activity:
         time = str(activity.time)
         person = str(activity.person.name)
+        category = str(activity.category)
         location = activity.location
+        
         
     else:
         location = activity
+        category = 'see activity'
     record  = {
         'name':str(location.name), 
         'id': str(location.id),
@@ -49,7 +49,7 @@ def geofence_record(activity, fence, an_activity, time = '', person = ''):
         'address': str(location.address), 
         'description': str(location.description),
         'act_type': 'geo_fence',
-        'category': 'see activity',
+        'category': category,
         'person': person}
     return record
 
@@ -67,8 +67,10 @@ def map_view(request):
     loc_activities = Activity.objects.filter(person=person,category="Location").order_by('time')
     loc_list = list(loc_activities)
     j = 0
+    added_locs = []
     journeys = [[]] # build list of lists of separate journeys to then add to ordered dict of features for template to draw
     for l in loc_list:
+        # current point
         pnt = Point(float(l.locLon),float(l.locLat), srid=3857)
         # see if in geofence but needs to be updated
         if not l.location:
@@ -121,6 +123,7 @@ def map_view(request):
                 wkt_fence = wkt_w.write(l.location.fence)
                 to_add = geofence_record(l, wkt_fence, True)
                 journeys[j].append(to_add)
+                added_locs.append(l.location.name)
                 
         # just travel point
         else:
@@ -148,9 +151,11 @@ def map_view(request):
     # get additional known locations details for this person
     fences = list(Location.objects.filter(person__hash=person_hash))
     for f in fences:
-        wkt_fence = wkt_w.write(f.fence)
-        to_add = geofence_record(f, wkt_fence, False)
-        journeys[j].append(to_add)
+        if f.name not in added_locs:
+            wkt_fence = wkt_w.write(f.fence)
+            to_add = geofence_record(f, wkt_fence, False)
+            journeys[j].append(to_add)
+            added_locs.append(l.location.name)
         
 
     template = loader.get_template('MapView.html')

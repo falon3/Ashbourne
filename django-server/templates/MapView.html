@@ -14,9 +14,10 @@
         var last_exit = null; 
         var _MS_PER_HOUR = 1000*60*60;
         var _MS_PER_MIN = 1000*60;
+        var seen_ids = [];
         // iterate through each journey
         data.forEach(function(journey) {          
-            var seen_ids = [];
+            
             var pointList = [];
             var time_spent = {enter: null, exit: null};
             // add each path for each journey separately
@@ -27,28 +28,32 @@
                 var shape_type = place.feature.substr(0, place.feature.indexOf(" "));
                 var geom = wkt_f.read(place.feature);
 
-                if (shape_type == 'MULTIPOLYGON'){
+                if (shape_type == 'MULTIPOLYGON' && seen_ids.indexOf(place.id) == -1){
                     var title = place.name;
                 }
-                else var title = place.name + place.act_type;
+                else var title = place.name + " " + place.act_type;
 
                 if (place.time != null) var time = place.time;  
                 else var time = '';
                 if (place.act_type == 'enter location'){
                     time_spent.enter = new Date(place.time);
                 }
+                
                 if (place.act_type == 'exit place'){
                     time_spent.exit = new Date(place.time);     
                     // keep track of total time spent there in millis 
                     var place_update = layer.getFeaturesByAttribute('title', place.name);
-                    if (place_update[0].attributes.time != ''){
+                    
+                    console.log(place_update[0].attributes.title, place_update[0].attributes.time, typeof place_update[0].attributes.time==='number' );
+                    if (place_update[0].attributes.time != '' && typeof place_update[0].attributes.time==='number' ){
+                        console.log("already this time: ", place_update[0].attributes.time, time_spent);
                         place_update[0].attributes.time = place_update[0].attributes.time + (time_spent.exit.getTime() - time_spent.enter.getTime());
                     }
                     else {
                         place_update[0].attributes.time = time_spent.exit.getTime() - time_spent.enter.getTime();
+                    
                     }
                     layer.drawFeature(place_update[0]);
-                    //console.log( place_update.attributes.time);
                 }
                 geom.attributes = {
                     'label': '',
@@ -171,7 +176,7 @@
      });
      var path_style = new OpenLayers.StyleMap(s);
      var point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style});
-     //console.log(point_vectors);
+     
      map.addLayer(point_vectors);
      var points = {{point_collection|safe}}; // each activity dict including wkt features
      
@@ -194,7 +199,6 @@
 
      // detect click events onlocations
      function clickNotice(feat) {
-         //console.log(feat.geometry.getType())
          if (feat.layer.name == "Activities path") {
              feat.attributes.highlight = "0.8"; 
              point_vectors.redraw();
@@ -208,13 +212,14 @@
              if (feat.geometry.components.length > 1) return; // skip linestring
              var poplon = feat.geometry.bounds.right - (feat.geometry.bounds.right - feat.geometry.bounds.left)/2;
              var poplat = feat.geometry.bounds.top - (feat.geometry.bounds.top - feat.geometry.bounds.bottom)/2;
-
+             
+             console.log("feat: ", feat);
              var time_string = formatTime(feat.attributes.time);
              var message = "<center>" + feat.attributes.title + "</center>" + "</br> Person: " 
                          + feat.attributes.owner + "</br>Category: " + feat.attributes.category
                          + "</br>Total Time spent here: " + time_string;
          }
-         else  { // we have a point    
+         else  { // we have a point   
              var poplon = feat.geometry.x;
              var poplat = feat.geometry.y;
              var message = "<center>" + feat.attributes.time + "</center>";
@@ -236,7 +241,7 @@
          
      } 
      function onPopupClose(feat) {
-         //console.log(feat);
+         
          if (feat.layer.name == "Activities path") {
              feat.attributes.highlight = "0.4"; 
              point_vectors.redraw();
@@ -251,10 +256,12 @@
      }
 
      function formatTime(millis) {
+         console.log("MILLIS: ", millis);
          var minutes = Math.floor((millis/(1000 * 60))%60);
          var hours = Math.floor(millis/(1000 * 60 * 60));
+         
          var time_string = hours + " hours, " + minutes + " minutes";
-         return time_string;
+         return time_string.toString();
      }
 }   
 
@@ -271,17 +278,17 @@
 
      init(map);
 
-     // display popup of coords on click (FOR DEVELOPING DEBUGGING)
-     map.events.register("click", map, function(e) {
-         var lonlat = map.getLonLatFromViewPortPx(e.xy);
-         var toProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
-         var fromProjection   = new OpenLayers.Projection("EPSG:3857"); // to Spherical Mercator Projection
-         var alternate_position       = new OpenLayers.LonLat(lonlat.lon,lonlat.lat).transform( fromProjection, toProjection);
+     //display popup of coords on click (FOR DEVELOPING DEBUGGING)
+     /* map.events.register("click", map, function(e) {
+        var lonlat = map.getLonLatFromViewPortPx(e.xy);
+        var toProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+        var fromProjection   = new OpenLayers.Projection("EPSG:3857"); // to Spherical Mercator Projection
+        var alternate_position       = new OpenLayers.LonLat(lonlat.lon,lonlat.lat).transform( fromProjection, toProjection);
 
-         alert("You clicked near " + lonlat.lon + " E, " +
-             + lonlat.lat + " N" + " or: '" + 
-               alternate_position.lon + "', '" + alternate_position.lat + "'");      
-     }); 
+        alert("You clicked near " + lonlat.lon + " E, " +
+        + lonlat.lat + " N" + " or: '" + 
+        alternate_position.lon + "', '" + alternate_position.lat + "'");      
+        });  */
  }); 
 
 </script>  
