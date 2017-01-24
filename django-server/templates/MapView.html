@@ -7,23 +7,52 @@
 
 
 <script>
- 
     // draws vector shapes on specified layer. data in wkt string format. example:
     // MULTIPOLYGON (((-12638268.5812490005046129 7081697.4326630001887679, -12637389.5554239992052317 7081582.7771206004545093)))
     function show_vectors(layer, data){ 
         var wkt_f = new OpenLayers.Format.WKT(); 
-        var seen_ids = [];
-        
+        var last_exit = null; 
+        var _MS_PER_HOUR = 1000*60*60;
+        var _MS_PER_MIN = 1000*60;
         // iterate through each journey
-        data.forEach(function(journey) {
+        data.forEach(function(journey) {          
+            var seen_ids = [];
             var pointList = [];
+            var time_spent = {enter: null, exit: null};
             // add each path for each journey separately
             journey.forEach(function(place) {
-                
+                console.log(time_spent);
+                if (place == journey[0] && !!last_exit){
+                    pointList.push(last_exit);
+                }
                 var shape_type = place.feature.substr(0, place.feature.indexOf(" "));
                 var geom = wkt_f.read(place.feature);
-                if (place.time != null) var time = place.time;
+
+                if (shape_type == 'MULTIPOLYGON'){
+                    var title = place.name;
+                }
+                else var title = place.name + place.act_type;
+
+                if (place.time != null) var time = place.time;  
                 else var time = '';
+                if (place.act_type == 'enter location'){
+                    time_spent.enter = new Date(place.time);
+                    console.log("YOOOOOO", time_spent.enter)
+                }
+                if (place.act_type == 'exit place'){
+                    time_spent.exit = new Date(place.time);
+                    var minutes = Math.floor(((time_spent.exit.getTime() - time_spent.enter.getTime()) / (1000 * 60))%60);//.toString();
+                    var hours = Math.floor(((time_spent.exit.getTime() - time_spent.enter.getTime()) / (1000 * 60 * 60))).toString();
+                    console.log("befre:", time_spent);
+                    console.log( "Name: ", place.name, layer);
+                    
+                    var place_update = layer.getFeaturesByAttribute('title', place.name);
+                    console.log(place_update);
+                    
+                    place_update[0].attributes.time = hours + " hours, " + minutes + " minutes";// + (time_spent.exit.getTime() - time_spent.enter.getTime())/_MS_PER_HOUR.toString();
+                    layer.drawFeature(place_update[0]);
+                    //console.log( place_update.attributes.time);
+                }
                 geom.attributes = {
                     'label': '',
                     'color': "orange",
@@ -31,18 +60,18 @@
                     'xOffset': 0,
                     'yOffset': -15,
                     'strokeWidth': 2,
-                    'title': place.name,
+                    'title': title, 
                     'time': time,
                     'owner': place.person,
                     'category': place.category,
                 };
-                console.log(shape_type, place, seen_ids);
                 if (shape_type == 'MULTIPOLYGON'){
                     if (seen_ids.indexOf(place.id) == -1){
+                        if (time_spent.enter == null) time_spent.enter = new Date(place.time);
                         layer.addFeatures([geom]);
                         layer.drawFeature(geom);
                         seen_ids.push(place.id);
-                        }
+                    }
                 }
                     
                 //if (shape_type == 'MULTIPOLYGON') pointList = []; //dont need this?
@@ -51,10 +80,21 @@
                     layer.drawFeature(geom);
                     var coords = place.feature.replace(/[`~!@#$%^&*()_|+\=?;:'",<>\{\}\[\]\\\/]/gi, '').split(' ');
                     var path_pnt = new OpenLayers.Geometry.Point(coords[1], coords[2]);
-                    pointList.push(path_pnt);
+                    
+                    // if at last point in journey update last exit
+                    if (place == journey[journey.length -1]){
+                        if (journey.length == 1){
+                            pointList.push(path_pnt);
+                        }
+                        last_exit = path_pnt;
+                            
+                    }
+                    else {
+                        pointList.push(path_pnt);
+                    }
                 }
-                //if at end of points or after two points
-                if (pointList.length > 1) { // || i == data.length) {
+                // after two points
+                if (pointList.length > 1) { 
                     line = new OpenLayers.Geometry.LineString(pointList);
                     var feature = new OpenLayers.Feature.Vector(line);
                     feature.attributes = {
@@ -69,8 +109,10 @@
                     layer.addFeatures([feature]);
                     layer.drawFeature(feature);
                 }
+            
             });
         });
+
     }
  
  function init(map){
@@ -135,6 +177,7 @@
      //console.log(point_vectors);
      map.addLayer(point_vectors);
      var points = {{point_collection|safe}}; // each activity dict including wkt features
+     
      show_vectors(point_vectors, points);
      
      // zoom center and add toggles
@@ -168,7 +211,9 @@
              if (feat.geometry.components.length > 1) return; // skip linestring
              var poplon = feat.geometry.bounds.right - (feat.geometry.bounds.right - feat.geometry.bounds.left)/2;
              var poplat = feat.geometry.bounds.top - (feat.geometry.bounds.top - feat.geometry.bounds.bottom)/2;
-             var message = "<center>" + feat.attributes.title + "</center>" + "</br> Person: " + feat.attributes.owner + "</br>Category: " + feat.attributes.category;
+             var message = "<center>" + feat.attributes.title + "</center>" + "</br> Person: " 
+                         + feat.attributes.owner + "</br>Category: " + feat.attributes.category
+                         + "</br>Time here: " + feat.attributes.time;
          }
          else  { // we have a point    
              var poplon = feat.geometry.x;
@@ -184,7 +229,7 @@
              null, true, function(){
                  onPopupClose(feat);            
              });  
-         console.log(popup);
+
          popup.maxSize = new OpenLayers.Size(400, 350);
          popup.minSize = new OpenLayers.Size(50, 50);
          feat.popup = popup;

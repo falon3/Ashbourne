@@ -6,29 +6,52 @@ from django.http import HttpResponse
 from django.shortcuts import render_to_response, render, redirect
 from django.template import loader
 from django.contrib.gis.geos import GEOSGeometry, Point, WKTWriter, MultiPolygon
-from shapely.geometry import MultiLineString
 from itertools import chain
 from vectorformats.Formats import Django, GeoJSON
 from geojson import Feature, FeatureCollection
-from shapely.geometry import mapping, shape
+#from shapely.geometry import mapping, shape
 import dateutil.parser
 import datetime
 import geojson
 import json
 import collections
     
-def point_map_record(num, feat, point, activity, category = None):
+def point_map_record(name, feat, point, activity, act_type, category = None):
     if not category:
         category = str(activity.category)
+
     point_record = {
-        'name' : 'Journey - ' + str(num),
+        'name' : name,
         'feature': feat, 
         'time': str(activity.time), 
         'locLat': str(point.y), 
         'locLon': str(point.x), 
-        'category': category, 
+        'category': category,
+        'act_type': act_type,
         'person': str(activity.person.name)}
+    print str(activity.time), act_type
+    print "\n\n\n"
     return point_record
+
+def geofence_record(activity, fence, an_activity, time = '', person = ''):
+    if an_activity:
+        time = str(activity.time)
+        person = str(activity.person.name)
+        location = activity.location
+        
+    else:
+        location = activity
+    record  = {
+        'name':str(location.name), 
+        'id': str(location.id),
+        'feature': fence,
+        'time': time,
+        'address': str(location.address), 
+        'description': str(location.description),
+        'act_type': 'geo_fence',
+        'category': 'see activity',
+        'person': person}
+    return record
 
 @csrf_exempt
 def map_view(request):
@@ -43,7 +66,6 @@ def map_view(request):
     # get activity details from 'Location' activities for this person
     loc_activities = Activity.objects.filter(person=person,category="Location").order_by('time')
     loc_list = list(loc_activities)
-    locs_added = set()
     j = 0
     journeys = [[]] # build list of lists of separate journeys to then add to ordered dict of features for template to draw
     for l in loc_list:
@@ -55,81 +77,68 @@ def map_view(request):
                 l.location = fence_loc[0]
                 l.update()
 
+        prior = {}
+        prior['name'] = None
+        prior['act_type'] = None
+        if len(journeys[j]) > 0: 
+            prior = journeys[j][-1]
+
         # if hit a known location add nearest boundary points too
         if l.location:
-            # add the location, then add the ENTRY boundary point
-            if str(l.location.name):
-                # may need exit point from last location 
-                if len(journeys[j]) == 0 and  j > 0: 
-                    print "FIRST journeys last place: ", journeys[j-1][-2]
-                    print "\n\n\n\n\n\n\n\n"
-                    last_place = journeys[j-1][-2]
-                    boundary = GEOSGeometry(last_place['feature']).boundary
-                    opt_dist = boundary.distance(pnt)
-                    multiline = MultiLineString(boundary.coords)
-                    # get point on multiline at that distance
-                    exitpnt = multiline.interpolate(opt_dist) 
-                    wkt_feat = exitpnt.wkt
-                    to_add = point_map_record(j, wkt_feat, exitpnt, l, "exit place")
-                    journeys[j].append(to_add) 
+            # add the ENTRY boundary point then the location
+            if str(l.location.name): # if has name then at known geofence 
 
-                # add current polygon location
+                # went from location to location
+                if prior['act_type'] == "geo_fence" and prior['name'] != l.location.name:
+                    # use centroids as point to point reference
+                    last_cnt = prior['feature'].centroid
+                    wkt_feat = wkt_w.write(last_cnt)
+                    to_add = point_map_record(str(l.location.name), wkt_feat, last_cnt, l, "exit place")
+                    journeys[j].append(to_add)
+                    # start next journey
+                    journeys.append([]) 
+                    j += 1
+                    
+                    # add entry point 
+                    curr_cnt = l.location.fence.centroid
+                    wkt_feat = curr_cnt.wkt
+                    to_add = point_map_record(str(l.location.name), wkt_feat, curr_cnt, l, "enter location")
+                    journeys[j].append(to_add)
+                    
+                # entered new location after a travel point
+                # get entry point based on last recorded location
+                elif prior['name'] and prior['name'] != l.location.name:
+                     last_pnt = Point(float(prior['locLon']),float(prior['locLat']), srid=3857)           
+                     boundary = l.location.fence.boundary
+                     opt_dist = boundary.project(last_pnt)
+                     # get point on boundary at that distance
+                     entry = boundary.interpolate(opt_dist) 
+                     wkt_feat = wkt_w.write(entry)
+                     to_add = point_map_record(str(l.location.name), wkt_feat, entry, l, "enter location")
+                     journeys[j].append(to_add)
+
+                # add current location even if stayed in same location
                 wkt_fence = wkt_w.write(l.location.fence)
-                journeys[j].append({
-                    'name':str(l.location.name), 
-                    'id': str(l.location.id),
-                    'feature': wkt_fence,
-                    'time': str(l.time),
-                    'address': str(l.location.address), 
-                    'description': str(l.location.description), 
-                    'person': str(l.person.name)})
-                locs_added.add(str(l.location.name))
-
-                # add optimal entry point used for this location
-                # case 1: 1st activity recorded use center of location as entry
-                if j == 0:
-                    pnt = l.location.fence.centroid
-                    wkt_feat = wkt_w.write(pnt)
-                    to_add = point_map_record(j, wkt_feat, pnt, l, "center point")
-                    journeys[j].append(to_add)
-
-                # case 2: get entry point based on last recorded location
-                else:
-                    last = journeys[j][-2] # last point before location (could be exit)
-                    last_pnt = Point(float(last['locLon']),float(last['locLat']), srid=3857)           
-                    boundary = l.location.fence.boundary
-                    opt_dist = boundary.distance(last_pnt)
-                    multiline = MultiLineString(boundary.coords)
-                    # get point on multiline at that distance
-                    entry = multiline.interpolate(opt_dist) 
-                    wkt_feat = entry.wkt
-                    to_add = point_map_record(j, wkt_feat, entry, l, "enter location")
-                    journeys[j].append(to_add)
-    
-            
-            if len(journeys[j])>0:
-                # hit a hit location so start next journey list
+                to_add = geofence_record(l, wkt_fence, True)
+                journeys[j].append(to_add)
+                
+        # just travel point
+        else:
+            # may need exit point from last location to this current point
+            if prior['act_type'] == "geo_fence": 
+                boundary = GEOSGeometry(prior['feature']).boundary
+                opt_dist = boundary.project(pnt)
+                exitpnt = boundary.interpolate(opt_dist) 
+                wkt_feat = wkt_w.write(exitpnt)
+                to_add = point_map_record(str(prior['name']), wkt_feat, exitpnt, l, "exit place")
+                journeys[j].append(to_add) 
+                
+                # start next journey after exit
                 journeys.append([]) 
                 j += 1
-
-        else:
-            pnt = Point((float(l.locLon), float(l.locLat)), srid=3857)
-            # may need exit point from last location to this current point
-            if len(journeys[j]) == 0 and  j > 0: 
-                print "journeys last place: ", journeys[j-1][-2]
-                print "\n\n\n\n\n\n\n\n\n"
-                last_place = journeys[j-1][-2]
-                boundary = GEOSGeometry(last_place['feature']).boundary
-                opt_dist = boundary.distance(pnt)
-                multiline = MultiLineString(boundary.coords)
-                # get point on multiline at that distance
-                exitpnt = multiline.interpolate(opt_dist) 
-                wkt_feat = exitpnt.wkt
-                to_add = point_map_record(j, wkt_feat, exitpnt, l, "exit_place")
-                journeys[j].append(to_add) 
   
             wkt_feat = wkt_w.write(pnt)
-            reg_point =  point_map_record(j, wkt_feat, pnt, l)
+            reg_point =  point_map_record("journey: " + str(j), wkt_feat, pnt, l, "moving")
             journeys[j].append(reg_point)
     
     for i in range(0,len(journeys)):
@@ -140,13 +149,9 @@ def map_view(request):
     fences = list(Location.objects.filter(person__hash=person_hash))
     for f in fences:
         wkt_fence = wkt_w.write(f.fence)
-        feature_fences[str(f.name)] = [{
-            'name' : str(f.name),
-            'id': str(f.id),
-            'feature': wkt_fence, 
-            'address': str(f.address), 
-            'description': str(f.description), 
-            'person': str(f.person.name)}]
+        to_add = geofence_record(f, wkt_fence, False)
+        journeys[j].append(to_add)
+        
 
     template = loader.get_template('MapView.html')
     # send all the data back
