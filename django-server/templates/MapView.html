@@ -25,6 +25,7 @@
             var pointList = [];
             var time_spent = {enter: null, exit: null};
             // add each path for each journey separately
+            //console.log(pointList);
             journey.forEach(function(place) {
                 if (place == journey[0] && !!last_exit){
                     pointList.push(last_exit);
@@ -92,6 +93,7 @@
                             pointList.push(path_pnt);
                         }
                         last_exit = path_pnt;
+                        console.log("last_exit", last_exit);
                             
                     }
                     else {
@@ -99,6 +101,7 @@
                     }
                 }
                 // after two points
+
                 if (pointList.length > 1) { 
                     line = new OpenLayers.Geometry.LineString(pointList);
                     var feature = new OpenLayers.Feature.Vector(line);
@@ -150,7 +153,7 @@
          'labelYOffset': "${yOffset}"
      });
      var home_style = new OpenLayers.StyleMap(h);
-     var other_locs = new OpenLayers.Layer.Vector("Other locations", {
+     other_locs = new OpenLayers.Layer.Vector("Other locations", {
          styleMap: home_style, 
          
      });    
@@ -178,7 +181,7 @@
          'labelYOffset': "${yOffset}"
      });
      var path_style = new OpenLayers.StyleMap(s);
-     var point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style});
+     point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style}); //GLOBALLY AVAILABLE
      
      map.addLayer(point_vectors);
      var points = {{point_collection|safe}}; // each activity dict including wkt features
@@ -269,7 +272,7 @@
  }
 
  $(document).ready(function () {
-     $("#slider").dateRangeSlider({
+     slider = $("#slider").dateRangeSlider({
          bounds:{
              min: new Date(2016, 12, 01),
              max: new Date(2018, 01, 01)
@@ -289,6 +292,9 @@
      map = new OpenLayers.Map('map', options); 
 
      init(map);
+
+     // TODO add eventlistener for daterange and then remove and readd all the features to activity layer
+     console.log($("#slider").dateRangeSlider("values"));
 
      //display popup of coords on click (FOR DEVELOPING DEBUGGING)
      /* map.events.register("click", map, function(e) {

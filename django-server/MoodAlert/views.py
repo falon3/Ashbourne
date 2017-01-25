@@ -15,9 +15,9 @@ import datetime
 import geojson
 import json
 import collections
-    
-def point_map_record(name, feat, point, activity, act_type):
 
+#helper function builds the object for a point location record    
+def point_map_record(name, feat, point, activity, act_type):
     point_record = {
         'name' : name,
         'feature': feat, 
@@ -27,9 +27,9 @@ def point_map_record(name, feat, point, activity, act_type):
         'category': str(activity.category),
         'act_type': act_type,
         'person': str(activity.person.name)}
-
     return point_record
 
+#helper function builds the object for a geofence record
 def geofence_record(activity, fence, an_activity, time = '', person = ''):
     if an_activity:
         time = str(activity.time)
@@ -53,6 +53,7 @@ def geofence_record(activity, fence, an_activity, time = '', person = ''):
         'person': person}
     return record
 
+# handles GET request for the /map/ url
 @csrf_exempt
 def map_view(request):
     person_hash = request.GET.get('person_hash')
@@ -62,13 +63,14 @@ def map_view(request):
     feature_fences = collections.OrderedDict()
     wkt_w = WKTWriter()
 
-    activity = 1
     # get activity details from 'Location' activities for this person
     loc_activities = Activity.objects.filter(person=person,category="Location").order_by('time')
     loc_list = list(loc_activities)
     j = 0
-    added_locs = []
-    journeys = [[]] # build list of lists of separate journeys to then add to ordered dict of features for template to draw
+    added_locs = [] # keep track of locations already added
+    
+    # build list of lists of separate journeys to then add to ordered dict of features for template to draw
+    journeys = [[]] 
     for l in loc_list:
         # current point
         pnt = Point(float(l.locLon),float(l.locLat), srid=3857)
@@ -93,7 +95,7 @@ def map_view(request):
                 # went from location to location
                 if prior['act_type'] == "geo_fence" and prior['name'] != l.location.name:
                     # use centroids as point to point reference
-                    last_cnt = prior['feature'].centroid
+                    last_cnt =  GEOSGeometry(prior['feature']).centroid
                     wkt_feat = wkt_w.write(last_cnt)
                     to_add = point_map_record(str(l.location.name), wkt_feat, last_cnt, l, "exit place")
                     journeys[j].append(to_add)
@@ -148,31 +150,50 @@ def map_view(request):
         if len(journeys[i]) > 0:
             feature_points["journey "+str(i)] = journeys[i]
 
-    # get additional known locations details for this person
+    # get additional known locations details for this person or their friends' homes
+    all_friends = get_all_friends(person)
     fences = list(Location.objects.filter(person__hash=person_hash))
+    for friend in all_friends:
+        if friend.home:
+            fences.append(friend.home)
     for f in fences:
         if f.name not in added_locs:
             wkt_fence = wkt_w.write(f.fence)
             to_add = geofence_record(f, wkt_fence, False)
-            journeys[j].append(to_add)
-            added_locs.append(l.location.name)
+            feature_fences[str(f.name)] = [to_add]
+            added_locs.append(f.name)
         
 
     template = loader.get_template('MapView.html')
-    # send all the data back
-    loc_activities = loc_activities.exclude(location__name=None).order_by('time')
+    # send all the data back to the template
     context = {}
-    context['known_locations'] = sorted(feature_fences.iteritems())
+    context['known_locations'] = sorted(feature_fences.iteritems())    
     context['title'] = "Activity Map for " + person.name
     context['point_collection'] = sorted(feature_points.iteritems())
     context['selectperson'] = person
     context['location'] = 'all'
     context['time_from'] = 'all'
     context['time_to'] = 'now'
+
+    # for the table summary
+    loc_activities = loc_activities.exclude(location__name=None).order_by('time')
     context['query_result'] = loc_activities
     return JsonResponse(
         {'html': template.render(context, request)}
     )
+
+# returns list of all person friends
+def get_all_friends(person):
+    friends = []
+    result1 = Relation.objects.filter(person_1=person).all()
+    result2 = Relation.objects.filter(person_2=person).all()
+    result = list(chain(result1, result2))
+    for relation in result:
+        if not relation.person_1 == person:
+            friends.append(relation.person_1)
+        if not relation.person_2 == person:
+            friends.append(relation.person_2)
+    return friends
 
 # handles POST to /add_record/
 # watch data from emails is added by callng this method
