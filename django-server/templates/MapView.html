@@ -1,9 +1,13 @@
 
-
+<link rel="stylesheet" href="/static/css/iThing.css" type="text/css" />
 <script type="text/javascript" src="/static/admin/js/vendor/jquery/jquery.js"></script>
+<script src="http://code.jquery.com/jquery-migrate-1.0.0.js"></script>
 <script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
+<script type="text/javascript" src="/static/js/jquery-ui.js"></script>
 <script type="text/javascript" src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
 <script type="text/javascript" src="/static/admin/js/prepopulate.js"></script>
+<script type="text/javascript" src="/static/js/jQAllRangeSliders-min.js"></script>
+
 
 
 <script>
@@ -44,9 +48,9 @@
                     // keep track of total time spent there in millis 
                     var place_update = layer.getFeaturesByAttribute('title', place.name);
                     
-                    console.log(place_update[0].attributes.title, place_update[0].attributes.time, typeof place_update[0].attributes.time==='number' );
+                    //console.log(place_update[0].attributes.title, place_update[0].attributes.time, typeof place_update[0].attributes.time==='number' );
                     if (place_update[0].attributes.time != '' && typeof place_update[0].attributes.time==='number' ){
-                        console.log("already this time: ", place_update[0].attributes.time, time_spent);
+                        //console.log("already this time: ", place_update[0].attributes.time, time_spent);
                         place_update[0].attributes.time = place_update[0].attributes.time + (time_spent.exit.getTime() - time_spent.enter.getTime());
                     }
                     else {
@@ -76,7 +80,6 @@
                     }
                 }
                     
-                //if (shape_type == 'MULTIPOLYGON') pointList = []; //dont need this?
                 if (shape_type == 'POINT'){  
                     layer.addFeatures([geom]);
                     layer.drawFeature(geom);
@@ -213,7 +216,6 @@
              var poplon = feat.geometry.bounds.right - (feat.geometry.bounds.right - feat.geometry.bounds.left)/2;
              var poplat = feat.geometry.bounds.top - (feat.geometry.bounds.top - feat.geometry.bounds.bottom)/2;
              
-             console.log("feat: ", feat);
              var time_string = formatTime(feat.attributes.time);
              var message = "<center>" + feat.attributes.title + "</center>" + "</br> Person: " 
                          + feat.attributes.owner + "</br>Category: " + feat.attributes.category
@@ -240,32 +242,42 @@
          map.addPopup(popup);
          
      } 
-     function onPopupClose(feat) {
          
-         if (feat.layer.name == "Activities path") {
-             feat.attributes.highlight = "0.4"; 
-             point_vectors.redraw();
-         }
-         else {
-             feat.attributes.color = "orange"; 
-             other_locs.redraw();
-         }
-         map.removePopup(feat.popup);
-         feat.popup.destroy();
-         
-     }
-
-     function formatTime(millis) {
-         console.log("MILLIS: ", millis);
-         var minutes = Math.floor((millis/(1000 * 60))%60);
-         var hours = Math.floor(millis/(1000 * 60 * 60));
-         
-         var time_string = hours + " hours, " + minutes + " minutes";
-         return time_string.toString();
-     }
 }   
 
+ function onPopupClose(feat) {
+     
+     if (feat.layer.name == "Activities path") {
+         feat.attributes.highlight = "0.4"; 
+         point_vectors.redraw();
+     }
+     else {
+         feat.attributes.color = "orange"; 
+         other_locs.redraw();
+     }
+     map.removePopup(feat.popup);
+     feat.popup.destroy();
+     
+ }
+
+ function formatTime(millis) {
+     var minutes = Math.floor((millis/(1000 * 60))%60);
+     var hours = Math.floor(millis/(1000 * 60 * 60));
+     
+     var time_string = hours + " hours, " + minutes + " minutes";
+     return time_string.toString();
+ }
+
  $(document).ready(function () {
+     $("#slider").dateRangeSlider({
+         bounds:{
+             min: new Date(2016, 12, 01),
+             max: new Date(2018, 01, 01)
+         },
+         defaultValues:{
+             min: new Date(2017, 01, 10),
+             max: new Date(2017, 04, 01)
+         }});
      var options = {
          'target': "map",
          'units' : "m",
@@ -274,7 +286,7 @@
          'projection' : new OpenLayers.Projection("EPSG:3857"),
          'maxExtent' : new OpenLayers.Bounds(-17037508,40000000,-5000000,12020000)
      };
-     var map = new OpenLayers.Map('map', options); 
+     map = new OpenLayers.Map('map', options); 
 
      init(map);
 
@@ -292,10 +304,12 @@
  }); 
 
 </script>  
- 
+
     <span class="mapview">
         <h2 style="text-align:center;" >{{title}}</h2>
+        <div id="slider"></div></br>
         <style type="text/css">
+         
          #map {
              width: 100%;
              height: 80%;
