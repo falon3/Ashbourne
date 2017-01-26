@@ -6,7 +6,7 @@
             <th>Tag ID</th>
             <th>Phone Number</th>
             <th>Relation</th>
-            <th>Activity Map</th>
+            <th>Activity Visuals</th>
         </tr>
     </thead>
     {% for Person in query_result %}
@@ -16,7 +16,7 @@
         <th>{{ Person.tag_id }}</th>
         <th>{{ Person.cell_number }}</th>
         <th class="relation-clicked" data-id="{{ Person.hash }}"><button class="btn btn-default " >Relations</button></th>
-        <th><button class="btn btn-default map" data-id="{{ Person.hash }}" >Map</button></th>
+        <th><center><button class="btn btn-default map" data-id="{{ Person.hash }}" >Map</button> <button class="btn btn-default calendar" data-id="{{ Person.hash }}">Calendar</button></center></th>
     </tr>
     {% endfor %}
 </table>

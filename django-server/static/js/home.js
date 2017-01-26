@@ -19,7 +19,29 @@ $(document).ready(function () {
                 
             },
             failure: function (data) {
-                console.log('Got an error when requesting show_activity_table');
+                console.log('Got an error when requesting map');
+            }
+        });
+    });
+
+    $(document).on('click', '.calendar', function () {
+        //$(location).attr('href',"/calendar/");
+         $.ajax({
+            url: "/calendar/",
+            traditional: true,
+            async: false,
+            type: "GET",
+            dataType: "json",
+            data: {
+                person_hash: $(this).data('id')
+            },
+            success: function (data) {
+                //console.log(data['html'])
+                $('.report-content').html(data['html']);
+                
+            },
+            failure: function (data) {
+                console.log('Got an error when requesting calendar');
             }
         });
     });

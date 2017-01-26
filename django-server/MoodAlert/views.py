@@ -190,6 +190,18 @@ def get_all_friends(person):
             friends.append(relation.person_2)
     return friends
 
+#handles GET for /calendar/
+def calendar_view(request):
+    person_hash = request.GET.get('person_hash')
+    person = Person.objects.get(hash=person_hash)
+
+    template = loader.get_template('calendarView.html')  
+    context = {}
+    context['title'] = "Activity Calendar for " + person.name
+    return JsonResponse(
+        {'html': template.render(context, request)}
+    )
+
 # handles POST to /add_record/
 # watch data from emails is added by callng this method
 @csrf_exempt
