@@ -67,7 +67,6 @@ def map_view(request):
     loc_activities = Activity.objects.filter(person=person,category="Location").order_by('time')
     loc_list = list(loc_activities)
     j = 0
-    added_locs = [] # keep track of locations already added
     
     # build list of lists of separate journeys to then add to ordered dict of features for template to draw
     journeys = [[]] 
@@ -125,7 +124,6 @@ def map_view(request):
                 wkt_fence = wkt_w.write(l.location.fence)
                 to_add = geofence_record(l, wkt_fence, True)
                 journeys[j].append(to_add)
-                added_locs.append(l.location.name)
                 
         # just travel point
         else:
@@ -157,15 +155,12 @@ def map_view(request):
         if friend.home:
             fences.append(friend.home)
     for f in fences:
-        if f.name not in added_locs:
-            wkt_fence = wkt_w.write(f.fence)
-            to_add = geofence_record(f, wkt_fence, False)
-            feature_fences[str(f.name)] = [to_add]
-            added_locs.append(f.name)
-        
+        wkt_fence = wkt_w.write(f.fence)
+        to_add = geofence_record(f, wkt_fence, False)
+        feature_fences[str(f.name)] = [to_add]        
 
-    template = loader.get_template('MapView.html')
     # send all the data back to the template
+    template = loader.get_template('MapView.html')   
     context = {}
     context['known_locations'] = sorted(feature_fences.iteritems())    
     context['title'] = "Activity Map for " + person.name
@@ -177,7 +172,7 @@ def map_view(request):
 
     # for the table summary
     loc_activities = loc_activities.exclude(location__name=None).order_by('time')
-    context['query_result'] = loc_activities
+    #context['query_result'] = loc_activities
     return JsonResponse(
         {'html': template.render(context, request)}
     )

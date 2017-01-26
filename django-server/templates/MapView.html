@@ -13,7 +13,7 @@
 <script>
     // draws vector shapes on specified layer. data in wkt string format. example:
     // MULTIPOLYGON (((-12638268.5812490005046129 7081697.4326630001887679, -12637389.5554239992052317 7081582.7771206004545093)))
-    function show_vectors(layer, data){ 
+    function show_vectors(layer, data, datemin, datemax){ 
         var wkt_f = new OpenLayers.Format.WKT(); 
         var last_exit = null; 
         var _MS_PER_HOUR = 1000*60*60;
@@ -25,11 +25,20 @@
             var pointList = [];
             var time_spent = {enter: null, exit: null};
             // add each path for each journey separately
-            //console.log(pointList);
             journey.forEach(function(place) {
+                if (place.time != null) {
+                    var time = place.time; 
+                    // skip all activities not within the date range
+                    if (new Date(time) < datemin  || new Date(time) > datemax){
+                        return
+                    }
+                }
+                else var time = '';
+
                 if (place == journey[0] && !!last_exit){
                     pointList.push(last_exit);
                 }
+
                 var shape_type = place.feature.substr(0, place.feature.indexOf(" "));
                 var geom = wkt_f.read(place.feature);
 
@@ -38,8 +47,7 @@
                 }
                 else var title = place.name + " " + place.act_type;
 
-                if (place.time != null) var time = place.time;  
-                else var time = '';
+                
                 if (place.act_type == 'enter location'){
                     time_spent.enter = new Date(place.time);
                 }
@@ -131,11 +139,13 @@
      var OSM_layer = new OpenLayers.Layer.OSM("OpenStreet Map");
      map.addLayer(OSM_layer);
 
-     OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);         
-     
+     OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);             
      var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
-     var zoom           = 16;
+     var zoom           = 13;
      
+     var currDateMin = $("#slider").dateRangeSlider("values").min;
+     var currDateMax = $("#slider").dateRangeSlider("values").max;
+
      // home polygon fences layer  
      var h = new OpenLayers.Style({
          'strokeColor':"${color}",
@@ -159,7 +169,7 @@
      });    
      map.addLayer(other_locs);
      var data = {{known_locations|safe}}; // each location dict including wkt polygon
-     show_vectors(other_locs, data);
+     show_vectors(other_locs, data, currDateMin, currDateMax);
 
      // journey from activities layer
      var s = new OpenLayers.Style({
@@ -184,9 +194,9 @@
      point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style}); //GLOBALLY AVAILABLE
      
      map.addLayer(point_vectors);
-     var points = {{point_collection|safe}}; // each activity dict including wkt features
+     points = {{point_collection|safe}}; // each activity dict including wkt features // GLOBAL
      
-     show_vectors(point_vectors, points);
+     show_vectors(point_vectors, points, currDateMin, currDateMax);
      
      // zoom center and add toggles
      map.addControl(new OpenLayers.Control.LayerSwitcher());
@@ -278,8 +288,8 @@
              max: new Date(2018, 01, 01)
          },
          defaultValues:{
-             min: new Date(2017, 01, 10),
-             max: new Date(2017, 04, 01)
+             min: new Date(2016, 12, 15),
+             max: new Date(2017, 1, 01)
          }});
      var options = {
          'target': "map",
@@ -293,8 +303,14 @@
 
      init(map);
 
-     // TODO add eventlistener for daterange and then remove and readd all the features to activity layer
-     console.log($("#slider").dateRangeSlider("values"));
+     var path_layer = map.getLayersByName("Activities path")[0];
+     // detect changes in daterange slider
+     $("#slider").bind("valuesChanged", function(e, data){
+         path_layer.removeAllFeatures(); //remove  all features and re-add them within the time limits       
+         show_vectors(path_layer, points, data.values.min, data.values.max);
+     });
+
+         
 
      //display popup of coords on click (FOR DEVELOPING DEBUGGING)
      /* map.events.register("click", map, function(e) {
@@ -327,5 +343,5 @@
     </span>
     
     <div>
-    {% include "filtered_activity_table.html" %}
+        <!--{% include "filtered_activity_table.html" %} -->
     </div>
