@@ -16,6 +16,9 @@ class Location(models.Model):
     person = models.ForeignKey('Person',null=True, blank=True)
     # GeoDjango-specific: a geometry field (MultiPolygonField)
 
+    def update(self, *args, **kwargs):
+        super(Location, self).save(*args, **kwargs)
+
     # Returns the string representation of the model.
     def __str__(self):              # __unicode__ on Python 2
         return self.name 
@@ -41,6 +44,13 @@ class Person(models.Model):
     def save(self, *args, **kwargs):
         if not self.pk:
             self.hash = gen_hash(self.id)
+        # update location 
+        if self.home:
+            loc_home = Location.objects.filter(name=self.home.name)[0]
+            if loc_home.person == None:
+                loc_home.person = self
+                loc_home.update()
+
         super(Person, self).save(*args, **kwargs)
 
     def __str__(self):
