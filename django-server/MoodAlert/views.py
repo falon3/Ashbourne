@@ -9,7 +9,6 @@ from django.contrib.gis.geos import GEOSGeometry, Point, WKTWriter, MultiPolygon
 from itertools import chain
 from vectorformats.Formats import Django, GeoJSON
 from geojson import Feature, FeatureCollection
-#from shapely.geometry import mapping, shape
 import dateutil.parser
 import datetime
 import geojson
@@ -36,7 +35,6 @@ def geofence_record(activity, fence, an_activity, time = '', person = ''):
         person = str(activity.person.name)
         category = str(activity.category)
         location = activity.location
-        
         
     else:
         location = activity
@@ -65,12 +63,16 @@ def map_view(request):
 
     # get activity details from 'Location' activities for this person
     loc_activities = Activity.objects.filter(person=person,category="Location").order_by('time')
-    loc_list = list(loc_activities)
-    j = 0
-    
+    j = 0    
+
+
+    # for the table summary. Group all similar location activities
+    processed = []
+    currlocation = None
+    currentplace = None  
     # build list of lists of separate journeys to then add to ordered dict of features for template to draw
     journeys = [[]] 
-    for l in loc_list:
+    for l in loc_activities:
         # current point
         pnt = Point(float(l.locLon),float(l.locLat), srid=3857)
         # see if in geofence but needs to be updated
@@ -88,6 +90,13 @@ def map_view(request):
 
         # if hit a known location add nearest boundary points too
         if l.location:
+
+            # for the processed table groupings (append each place travelled to in order)
+            if l.location != currlocation:
+                processed.append({"time": str(l.time), "location": l.location, "person": l.person, "activity_type": str(l.activity_type)})
+                currentplace = l
+                currlocation = l.location
+
             # add the ENTRY boundary point then the location
             if str(l.location.name): # if has name then at known geofence 
 
@@ -127,6 +136,10 @@ def map_view(request):
                 
         # just travel point
         else:
+            # for the table count travel as no location
+            currlocation = None
+            currentplace = None
+
             # may need exit point from last location to this current point
             if prior['act_type'] == "geo_fence": 
                 boundary = GEOSGeometry(prior['feature']).boundary
@@ -169,12 +182,10 @@ def map_view(request):
     context['location'] = 'all'
     context['time_from'] = 'all'
     context['time_to'] = 'now'
-
-    # for the table summary
-    loc_activities = loc_activities.exclude(location__name=None).order_by('time')
-    #context['query_result'] = loc_activities
+    context['query_result'] = processed   # for the table summary. all similar location activities grouped
+    
     return JsonResponse(
-        {'html': template.render(context, request)}
+        {'html': template.render(context)}
     )
 
 # returns list of all person friends
@@ -236,7 +247,6 @@ def get_locations(request):
     hash = request.POST['hash']
     person = Person.objects.get(hash=hash)
     loc_activities = Activity.objects.filter(person=person,category="Location")
-    loc_list = list(loc_activities)
     str_result = ""
     for loc_act in loc_activities:
     	str_result += "time: " + str(loc_act.time) + ", data: " + loc_act.activity_data 
@@ -302,7 +312,7 @@ def show_person_table(request):
         'query_result': query_result,
     }
     return JsonResponse(
-        {'html': template.render(context, request)}
+        {'html': template.render(context)}
     )
 
 
@@ -317,7 +327,7 @@ def show_relations_table(request):
         'query_result': result,
     }
     return JsonResponse(
-        {'html': template.render(context, request)}
+        {'html': template.render(context)}
     )
 
 

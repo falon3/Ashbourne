@@ -1,54 +1,36 @@
 
-<p style="background-color: greenyellow;margin-left: 150px; margin-right: 150px">
+<p style="background-color: greenyellow;margin-left: 150px; margin-right: 150px" id="header">
     Showing results for Person: <b>{{ selectperson }}</b> at Location: <b> {{ location }}</b>,
     From: <b>{{ time_from }}</b> To: <b>{{ time_to }}</b>
 </p>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th class="row-socializing">Socializing</th>
-            <th class="row-outdoor">Outdoor</th>
-            <th class="row-entertainment">Entertainment</th>
-            <th class="row-cooking">Cooking</th>
-        </tr>
-    </thead>
-</table>
 
-<table class="table">
+<table class="table" id="listevent">
     <thead class="thead-inverse">
         <tr>
-            <th>Time</th>
-            <th>Person</th>
+            <th>Time from</th>
+            <th>Time until</th>
+            {% if selectperson ==  "all" %} 
+            <th>Person</th> 
+            {% endif %}
             <th>Location</th>
             <th>Activity type</th>
             <th>description</th>
         </tr>
     </thead>
+    <tbody>
+
     {% for activity in query_result %}
-    <tr {% if activity.category == "cooking" or activity.category == "Cooking" %}
-
-        class="row-cooking"
-    {% endif %}
-    {% if activity.category == "Entertainment" or activity.category == "entertainment" %}
-
-        class="row-entertainment"
-    {% endif %}
-    {% if activity.category == "outdoor" or activity.category == "Outdoor" %}
-
-        class="row-outdoor"
-    {% endif %}
-    {% if activity.category == "socializing" or activity.category == "Socializing" %}
-
-        class="row-socializing"
-    {% endif %}>
+    
         <th>{{ activity.time }}</th>
-        <td>{{ activity.person }}</td>
+        <th>{{ activity.time }}</th>
+        {% if activity.person != selectperson %} <td>{{ activity.person }}</td> {% endif %}
         <td>{{ activity.location }}</td>
         <th>{{ activity.activity_type }}</th>
-        <th>{{ activity.activity_data }}</th>
+        <th>{{ activity.location.description }}</th>
     </tr>
     {% endfor %}
+    </tbody>
 </table>
 
 

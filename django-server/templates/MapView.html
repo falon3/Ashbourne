@@ -7,6 +7,7 @@
 <script type="text/javascript" src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
 <script type="text/javascript" src="/static/admin/js/prepopulate.js"></script>
 <script type="text/javascript" src="/static/js/jQAllRangeSliders-min.js"></script>
+<script type="text/javascript" src="/static/js/moment.min.js"></script>
 
 
 
@@ -50,6 +51,7 @@
                 
                 if (place.act_type == 'enter location'){
                     time_spent.enter = new Date(place.time);
+                    
                 }
                 
                 if (place.act_type == 'exit place'){
@@ -57,15 +59,22 @@
                     // keep track of total time spent there in millis 
                     var place_update = layer.getFeaturesByAttribute('title', place.name);
                     
-                    //console.log(place_update[0].attributes.title, place_update[0].attributes.time, typeof place_update[0].attributes.time==='number' );
+                    // add total time spent there all together
                     if (place_update[0].attributes.time != '' && typeof place_update[0].attributes.time==='number' ){
-                        //console.log("already this time: ", place_update[0].attributes.time, time_spent);
                         place_update[0].attributes.time = place_update[0].attributes.time + (time_spent.exit.getTime() - time_spent.enter.getTime());
+                        
                     }
                     else {
                         place_update[0].attributes.time = time_spent.exit.getTime() - time_spent.enter.getTime();
+                        
                     
                     }
+                    // update table
+                    var curr_entry = $("table#listevent tbody tr > th:first-child").filter(function () {
+                        return ($(this).text() == time_spent.enter.toLocaleString());
+                    });
+                    curr_entry.next().text(time_spent.exit.toLocaleString());
+
                     layer.drawFeature(place_update[0]);
                 }
                 geom.attributes = {
@@ -82,7 +91,9 @@
                 };
                 if (shape_type == 'MULTIPOLYGON'){
                     if (seen_ids.indexOf(place.id) == -1){
-                        if (time_spent.enter == null) time_spent.enter = new Date(place.time);
+                        if (time_spent.enter == null){
+                            time_spent.enter = new Date(place.time);
+                        }
                         layer.addFeatures([geom]);
                         layer.drawFeature(geom);
                         seen_ids.push(place.id);
@@ -100,9 +111,7 @@
                         if (journey.length == 1){
                             pointList.push(path_pnt);
                         }
-                        last_exit = path_pnt;
-                        console.log("last_exit", last_exit);
-                            
+                        last_exit = path_pnt;                            
                     }
                     else {
                         pointList.push(path_pnt);
@@ -237,7 +246,8 @@
          else  { // we have a point   
              var poplon = feat.geometry.x;
              var poplat = feat.geometry.y;
-             var message = "<center>" + feat.attributes.time + "</center>";
+             var time = new Date(feat.attributes.time).toLocaleString();
+             var message = "<center>" + time + "</center>";
          }
          
          var popup = new OpenLayers.Popup.FramedCloud(
@@ -282,6 +292,14 @@
  }
 
  $(document).ready(function () {
+     $("p#header").hide();     
+
+     $("table#listevent tbody tr > th:first-child").each(function(index, time) {
+         var format = new Date( $(time).text()).toLocaleString();
+         $(time).text(format);
+
+     });
+
      slider = $("#slider").dateRangeSlider({
          bounds:{
              min: new Date(2016, 12, 01),
@@ -308,6 +326,18 @@
      $("#slider").bind("valuesChanged", function(e, data){
          path_layer.removeAllFeatures(); //remove  all features and re-add them within the time limits       
          show_vectors(path_layer, points, data.values.min, data.values.max);
+
+         // this is the date entry of each activity table row
+         $("table#listevent tbody tr > th:first-child").each(function(index, time) {
+             var compare_start = moment($(time).text(), "YYYY-MM-DD, hh:mm:ss A").toDate(); // format date
+             var compare_end = moment($(time).next().text(), "YYYY-MM-DD, hh:mm:ss a").toDate();
+             if (compare_start < data.values.min || compare_end > data.values.max){
+                 $(time).parent().hide();
+             }
+             else{
+                 $(time).parent().show();
+             }
+         });
      });
 
          
@@ -329,7 +359,7 @@
 
     <span class="mapview">
         <h2 style="text-align:center;" >{{title}}</h2>
-        <div id="slider"></div></br>
+        
         <style type="text/css">
          
          #map {
@@ -341,8 +371,8 @@
         <div id="map">
         </div>        
     </span>
-    
+    <div id="slider"></div></br>
     <div>
         
-        <!--{% include "filtered_activity_table.html" %} -->
+        {% include "filtered_activity_table.html" %}
     </div>
