@@ -17,6 +17,10 @@ import collections
 
 #helper function builds the object for a point location record    
 def point_map_record(name, feat, point, activity, act_type):
+    if activity.location:
+        person = str(activity.location.person)
+    else:
+        person = str(activity.person)
     point_record = {
         'name' : name,
         'feature': feat, 
@@ -25,20 +29,22 @@ def point_map_record(name, feat, point, activity, act_type):
         'locLon': str(point.x), 
         'category': str(activity.category),
         'act_type': act_type,
-        'person': str(activity.person.name)}
+        'person': person}
     return point_record
 
 #helper function builds the object for a geofence record
 def geofence_record(activity, fence, an_activity, time = '', person = ''):
     if an_activity:
         time = str(activity.time)
-        person = str(activity.person.name)
+        person = str(activity.location.person)
         category = str(activity.category)
         location = activity.location
         
     else:
         location = activity
         category = 'see activity'
+        person = str(location.person)
+
     record  = {
         'name':str(location.name), 
         'id': str(location.id),
