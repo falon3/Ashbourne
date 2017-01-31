@@ -12,11 +12,13 @@ class Location(models.Model):
     HEALTH = 'Health'
     HOME = 'Home'
     OTHER = 'Other'
+    HARMFUL = 'Harmful'
     LOCATION_CATEGORIES = (
         (SOCIAL, 'Social'),
         (HEALTH, 'Health'),
         (HOME, 'Home'),
         (OTHER, 'Other(out of house tasks)'),
+        (HARMFUL, 'Harmful/dangerous known place to be'),
     )
     name = models.CharField(max_length=100, default='', unique=True)
     person = models.ForeignKey('Person',null=True, blank=True)
@@ -70,10 +72,12 @@ class Relation(models.Model):
     FAMILY = 'Family'
     FRIENDS = 'Friends'
     HEALTH = 'Health'
+    NEGATIVE = 'Negative relationship or enemy'
     REL_TYPES = (
         (FAMILY, 'Family'),
         (FRIENDS, 'Friends'),
         (HEALTH, 'Health'),
+        (NEGATIVE, 'Negative'),
     )
     relation_type = MultiSelectField(choices= REL_TYPES, default= FRIENDS)
     person_1 = models.ForeignKey('Person', related_name='relations')
