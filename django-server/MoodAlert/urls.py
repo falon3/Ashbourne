@@ -14,6 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url, patterns, include
+from django.shortcuts import redirect
 from django.contrib import admin
 from . import views
 import settings
@@ -30,5 +31,6 @@ urlpatterns = [
     url(r'^get_relations_table/', views.show_relations_table),
     url(r'^get_locs_in_time/', views.get_locs_in_time),
     url(r'^get_calls_in_time/', views.get_calls_in_time),
-    url(r'^get_sms_in_time/', views.get_sms_in_time)
+    url(r'^get_sms_in_time/', views.get_sms_in_time),
+    url(r'^', views.get_home)
 ]

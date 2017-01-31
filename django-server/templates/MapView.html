@@ -27,6 +27,10 @@
             var time_spent = {enter: null, exit: null};
             // add each path for each journey separately
             journey.forEach(function(place) {
+                var color = "orange";
+                if (layer.name == "Activities path") color ="green";
+                if (place.category == "Harmful") color = "red";
+                            
                 if (place.time != null) {
                     var time = place.time; 
                     // skip all activities not within the date range
@@ -36,24 +40,16 @@
                 }
                 else var time = '';
 
-                if (place == journey[0] && !!last_exit){
-                    pointList.push(last_exit);
-                }
+                if (place == journey[0] && !!last_exit) pointList.push(last_exit); // keep track of exit point to draw line from
 
                 var shape_type = place.feature.substr(0, place.feature.indexOf(" "));
                 var geom = wkt_f.read(place.feature);
 
-                if (shape_type == 'MULTIPOLYGON' && seen_ids.indexOf(place.id) == -1){
-                    var title = place.name;
-                }
+                if (shape_type == 'MULTIPOLYGON' && seen_ids.indexOf(place.id) == -1) var title = place.name;         
                 else var title = place.name + " " + place.act_type;
-
-                
-                if (place.act_type == 'enter location'){
-                    time_spent.enter = new Date(place.time);
-                    
-                }
-                
+  
+                if (place.act_type == 'enter location') time_spent.enter = new Date(place.time);
+                      
                 if (place.act_type == 'exit place'){
                     time_spent.exit = new Date(place.time);     
                     // keep track of total time spent there in millis 
@@ -65,21 +61,19 @@
                         
                     }
                     else {
-                        place_update[0].attributes.time = time_spent.exit.getTime() - time_spent.enter.getTime();
-                        
-                    
+                        place_update[0].attributes.time = time_spent.exit.getTime() - time_spent.enter.getTime();   
                     }
                     // update table
                     var curr_entry = $("table#listevent tbody tr > th:first-child").filter(function () {
                         return ($(this).text() == time_spent.enter.toLocaleString());
                     });
                     curr_entry.next().text(time_spent.exit.toLocaleString());
-
                     layer.drawFeature(place_update[0]);
                 }
                 geom.attributes = {
                     'label': '',
-                    'color': "orange",
+                    'color': color,
+                    'fillcolor': color,
                     'highlight': "0.4",
                     'xOffset': 0,
                     'yOffset': -15,
@@ -90,6 +84,7 @@
                     'category': place.category,
                 };
                 if (shape_type == 'MULTIPOLYGON'){
+                    
                     if (seen_ids.indexOf(place.id) == -1){
                         if (time_spent.enter == null){
                             time_spent.enter = new Date(place.time);
@@ -158,7 +153,7 @@
      // home polygon fences layer  
      var h = new OpenLayers.Style({
          'strokeColor':"${color}",
-         'fillColor':"orange", 
+         'fillColor':"${fillcolor}", 
          'fillOpacity': 0.4, 
          'label': "${label}",
          'fontColor': "white",
@@ -185,7 +180,7 @@
          'strokeColor':"green",
          'pointRadius': 4,
          'strokeWidth': "${strokeWidth}",
-         'fillColor':"green", 
+         'fillColor':"${color}", 
          'fillOpacity': "${highlight}", 
          'label': "${label}",
          'fontColor': "white",
@@ -238,10 +233,10 @@
              var poplon = feat.geometry.bounds.right - (feat.geometry.bounds.right - feat.geometry.bounds.left)/2;
              var poplat = feat.geometry.bounds.top - (feat.geometry.bounds.top - feat.geometry.bounds.bottom)/2;
              
-             var time_string = formatTime(feat.attributes.time);
+             var time_string = formatTime(feat.attributes.time); 
              var message = "<center>" + feat.attributes.title + "</center>" + "</br> Person: " 
                          + feat.attributes.owner + "</br>Category: " + feat.attributes.category
-                         + "</br>Total Time spent here: " + time_string;
+                         + "</br>Total time spent here: " + time_string;
          }
          else  { // we have a point   
              var poplon = feat.geometry.x;
@@ -271,11 +266,13 @@
  function onPopupClose(feat) {
      
      if (feat.layer.name == "Activities path") {
+         if (feat.attributes.category == "Harmful") feat.attributes.color = "red"
          feat.attributes.highlight = "0.4"; 
          point_vectors.redraw();
      }
      else {
-         feat.attributes.color = "orange"; 
+         if (feat.attributes.category == "Harmful") feat.attributes.color = "red"
+         else feat.attributes.color = "orange"; 
          other_locs.redraw();
      }
      map.removePopup(feat.popup);
@@ -286,7 +283,7 @@
  function formatTime(millis) {
      var minutes = Math.floor((millis/(1000 * 60))%60);
      var hours = Math.floor(millis/(1000 * 60 * 60));
-     
+     if (minutes == NaN) return "unknown"
      var time_string = hours + " hours, " + minutes + " minutes";
      return time_string.toString();
  }

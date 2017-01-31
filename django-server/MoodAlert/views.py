@@ -15,6 +15,12 @@ import geojson
 import json
 import collections
 
+# handles GET request for /
+@csrf_exempt
+def get_home(request):
+    return redirect("website/")
+    
+
 #helper function builds the object for a point location record    
 def point_map_record(name, feat, point, activity, act_type):
     if activity.location:

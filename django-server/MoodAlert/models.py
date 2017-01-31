@@ -44,25 +44,24 @@ def gen_hash(id, length=None):
 class Person(models.Model):
     # id = models.PositiveIntegerField();
     watch_id = models.CharField(max_length=20)
-    tag_id = models.CharField(max_length=20)
     name = models.CharField(max_length=50)
     home = models.ForeignKey('Location', null=True, blank=True, related_name='home')
     phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$',
                                  message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
-    cell_number = models.CharField(validators=[phone_regex],  max_length=15)  # validators should be a list
+    cell_number = models.CharField(validators=[phone_regex],  max_length=15, null=True, blank=True)  # validators should be a list
     hash = models.CharField(max_length=10, null=True, blank=True, unique=True)
 
     def save(self, *args, **kwargs):
-        if not self.pk:
+        if not self.hash:
             self.hash = gen_hash(self.id)
+
+        super(Person, self).save(*args, **kwargs)
         # update location 
         if self.home:
             loc_home = Location.objects.filter(name=self.home.name)[0]
             if loc_home.person == None:
                 loc_home.person = self
                 loc_home.update()
-
-        super(Person, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.name
