@@ -6,10 +6,10 @@
             <th>Name</th>
         </tr>
     </thead>
-    {% for relation in query_result %}
+    {% for relation in query_result %}    
     <tr>
         <th>{{ relation.person_1 }}</th>
-        <td>{{ relation.relation_type }}</td>
+        <td>{{ relation.relation }}</td>
         <th>{{ relation.person_2 }}</th>
     </tr>
     {% endfor %}

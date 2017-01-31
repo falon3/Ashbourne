@@ -8,20 +8,21 @@ from multiselectfield import MultiSelectField
 from pyproj import Proj, transform
 
 class Location(models.Model):
-    SOCIAL = 'SOC'
-    HEALTH = 'HEA'
-    OTHER = 'OTH'
+    SOCIAL = 'Social'
+    HEALTH = 'Health'
+    HOME = 'Home'
+    OTHER = 'Other'
     LOCATION_CATEGORIES = (
         (SOCIAL, 'Social'),
         (HEALTH, 'Health'),
+        (HOME, 'Home'),
         (OTHER, 'Other(out of house tasks)'),
     )
     name = models.CharField(max_length=100, default='', unique=True)
-    address = models.CharField(max_length=30)
-    fence = models.MultiPolygonField(srid=3857)
-    description = models.CharField(max_length=50)
     person = models.ForeignKey('Person',null=True, blank=True)
-    category = MultiSelectField(choices= LOCATION_CATEGORIES, default= OTHER)
+    category = MultiSelectField(choices= LOCATION_CATEGORIES, default= OTHER, null=False)
+    description = models.CharField(max_length=50)
+    fence = models.MultiPolygonField(srid=3857)
     # GeoDjango-specific: a geometry field (MultiPolygonField)
 
     def update(self, *args, **kwargs):
@@ -66,9 +67,9 @@ class Person(models.Model):
 
 
 class Relation(models.Model):
-    FAMILY = 'FAM'
-    FRIENDS = 'FRI'
-    HEALTH = 'HEA'
+    FAMILY = 'Family'
+    FRIENDS = 'Friends'
+    HEALTH = 'Health'
     REL_TYPES = (
         (FAMILY, 'Family'),
         (FRIENDS, 'Friends'),
@@ -79,7 +80,12 @@ class Relation(models.Model):
     person_2 = models.ForeignKey('Person')
 
     def __str__(self):
-        return "%s %s %s" % (self.person_1.__str__(), self.relation_type, self.person_2.__str__())
+        rel_string = '('
+        for rel in self.relation_type:
+            rel_string += str(rel) + ", "
+        rel_string = rel_string[:-2] + ")"
+        #print rel_string
+        return "%s %s %s" % (self.person_1.__str__(), rel_string, self.person_2.__str__())
 
 
 class Activity(models.Model):

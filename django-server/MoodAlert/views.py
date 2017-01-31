@@ -37,12 +37,12 @@ def geofence_record(activity, fence, an_activity, time = '', person = ''):
     if an_activity:
         time = str(activity.time)
         person = str(activity.location.person)
-        category = str(activity.category)
+        category = str([str(cat) for cat in activity.location.category])[1:-1]
         location = activity.location
         
     else:
         location = activity
-        category = 'see activity'
+        category = str([str(cat) for cat in location.category])[1:-1]
         person = str(location.person)
 
     record  = {
@@ -50,10 +50,9 @@ def geofence_record(activity, fence, an_activity, time = '', person = ''):
         'id': str(location.id),
         'feature': fence,
         'time': time,
-        'address': str(location.address), 
         'description': str(location.description),
         'act_type': 'geo_fence',
-        'category': category,
+        'category': category.replace("'",""),
         'person': person}
     return record
 
@@ -327,10 +326,21 @@ def show_relations_table(request):
     result1 = Relation.objects.filter(person_1__hash=person_hash).all()
     result2 = Relation.objects.filter(person_2__hash=person_hash).all()
     result = list(chain(result1, result2))
+    relations = []
+    
+    for rel in result:
+        relation = {}
+        rel_str = str(rel).split(' ') # get relation(s) as a nice tuple string
+        rel_str = ' '.join(rel_str[1:-1])
+
+        relation['person_1'] = str(rel.person_1)
+        relation['person_2'] = str(rel.person_2)
+        relation['relation'] = rel_str
+        relations.append(relation)
 
     template = loader.get_template('relations_table.html')
     context = {
-        'query_result': result,
+        'query_result': relations,
     }
     return JsonResponse(
         {'html': template.render(context)}
