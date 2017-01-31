@@ -4,16 +4,24 @@ import math
 from django.core.validators import RegexValidator
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Point
+from multiselectfield import MultiSelectField
 from pyproj import Proj, transform
 
 class Location(models.Model):
-    # Regular Django fields corresponding to the attributes in the
-    # world borders shapefile.
-    name = models.CharField(max_length=50, default='', unique=True)
+    SOCIAL = 'SOC'
+    HEALTH = 'HEA'
+    OTHER = 'OTH'
+    LOCATION_CATEGORIES = (
+        (SOCIAL, 'Social'),
+        (HEALTH, 'Health'),
+        (OTHER, 'Other(out of house tasks)'),
+    )
+    name = models.CharField(max_length=100, default='', unique=True)
     address = models.CharField(max_length=30)
     fence = models.MultiPolygonField(srid=3857)
     description = models.CharField(max_length=50)
     person = models.ForeignKey('Person',null=True, blank=True)
+    category = MultiSelectField(choices= LOCATION_CATEGORIES, default= OTHER)
     # GeoDjango-specific: a geometry field (MultiPolygonField)
 
     def update(self, *args, **kwargs):
@@ -58,7 +66,15 @@ class Person(models.Model):
 
 
 class Relation(models.Model):
-    relation_type = models.CharField(max_length=20)
+    FAMILY = 'FAM'
+    FRIENDS = 'FRI'
+    HEALTH = 'HEA'
+    REL_TYPES = (
+        (FAMILY, 'Family'),
+        (FRIENDS, 'Friends'),
+        (HEALTH, 'Health'),
+    )
+    relation_type = MultiSelectField(choices= REL_TYPES, default= FRIENDS)
     person_1 = models.ForeignKey('Person', related_name='relations')
     person_2 = models.ForeignKey('Person')
 
