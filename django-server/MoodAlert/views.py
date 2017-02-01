@@ -87,7 +87,6 @@ def map_view(request):
     # build list of lists of separate journeys to then add to ordered dict of features for template to draw
     journeys = [[]] 
     for l in loc_activities:
-        print l.time, l
         # current point
         pnt = Point(float(l.locLon),float(l.locLat), srid=3857)
         # see if in geofence but needs to be updated
@@ -188,11 +187,7 @@ def map_view(request):
     context = {}
     context['known_locations'] = sorted(feature_fences.iteritems())    
     context['title'] = "Activity Map for " + person.name
-    context['point_collection'] = journeys #sorted(feature_points.items())
-    # for item in context['point_collection']:
-    #     for thing in item[1]:
-    #         print thing['time']
-    #     print "\n"
+    context['point_collection'] = journeys
     context['selectperson'] = person
     context['location'] = 'all'
     context['time_from'] = 'all'
@@ -229,11 +224,12 @@ def calendar_view(request):
     intervals = [] # make a list of all time intervals spent at home
     current = []
     for act in activities:
-        if len(current) > 1:
+        if len(current) > 2:
             print "what happened???", current
         if act.location:
             if act.location == person.home:
                 if len(current)==0:
+                    print "DATE" , act.time.date()
                     current.append(act.time) #interval entered home
                 else:
                     continue # still at home
@@ -251,13 +247,11 @@ def calendar_view(request):
 
     data = {} # keys are the dates values will be total time for that day in milliseconds
     print intervals
-    for period in intervals:
-        pass
-    # we want total time NOT at home so will do total milliseconds in a day - total for each
-    # 86400000 milliseconds in one day
+    data = calculate_timedata(data, intervals)
+    # we want total time NOT at home so will do total in a day - total for each
     for day in data.keys():
-        data[day] = 86400000 - data[day]
-
+        data[day] = datetime.timedelta(1) - data[day]
+    print data
     # TODO: get csv return to work and format it with time data
     # TODO: get second csv data to work also
     # field_names = ['Date', 'Time_Spent_Out']
@@ -271,6 +265,31 @@ def calendar_view(request):
     return JsonResponse(
         {'html': template.render(context, request)}
     )
+
+def calculate_timedata(data_dict, interval_list): 
+    if not interval_list:
+        return data_dict
+    for period in interval_list:
+        print type(period[0])
+        if period[0].date() != period[1].date(): # interval goes overnight so add one for each day
+            start = datetime.datetime(period[0].year, period[0].month, period[0].day, 0, 0, 0)
+            to_add = start + datetime.timedelta(1) - period[0] # time from current day
+            if period[0].date() not in data_dict.keys():
+                data_dict[period[0].date()]= to_add
+            else:
+                data_dict[period[0].date()]+= to_add
+            period[0] = start + datetime.timedelta(1) # now start at next day til end
+            sublist = []
+            data_dict = calculate_timedata(data_dict, sublist.append(period)) # recursively add other day data for this interval then continue
+
+            print period[1]-period[0], type(period[1]-period[0])
+        else:
+            to_add = period[1]-period[0]
+            if period[0].date() not in data_dict.keys():
+                data_dict[period[0].date()]= to_add
+            else:
+                data_dict[period[0].date()]+= to_add
+    return data_dict
 
 # handles POST to /add_record/
 # watch data from emails is added by callng this method
