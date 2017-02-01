@@ -3,7 +3,6 @@
         <tr>
             <th>Name</th>
             <th>Watch ID</th>
-            <th>Tag ID</th>
             <th>Phone Number</th>
             <th>Relation</th>
             <th>Activity Visuals</th>
@@ -13,10 +12,16 @@
     <tr class="person" data-id="{{ Person.hash }}">
         <th>{{ Person.name }}</th>
         <td>{{ Person.watch_id }}</td>
-        <th>{{ Person.tag_id }}</th>
         <th>{{ Person.cell_number }}</th>
         <th class="relation-clicked" data-id="{{ Person.hash }}"><button class="btn btn-default " >Relations</button></th>
-        <th><center><button class="btn btn-default map" data-id="{{ Person.hash }}" >Map</button> <button class="btn btn-default calendar" data-id="{{ Person.hash }}">Calendar</button></center></th>
+        <th>{% if Person.watch_id %}
+                <center><button class="btn btn-default map" data-id="{{ Person.hash }}" >Map</button> 
+                {% if Person.home %}
+                    <button class="btn btn-default calendar" data-id="{{ Person.hash }}">Calendar</button>
+                {% endif %}
+                </center>
+            {% endif %}
+        </th>
     </tr>
     {% endfor %}
 </table>

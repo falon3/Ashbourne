@@ -18,11 +18,16 @@ import collections
 # handles GET request for /
 @csrf_exempt
 def get_home(request):
-    return redirect("website/")
+    return redirect("/website")
     
 
 #helper function builds the object for a point location record    
 def point_map_record(name, feat, point, activity, act_type):
+    if act_type == "exit place":
+        time = activity.time - datetime.timedelta(0,1)
+    else:
+        time = activity.time
+
     if activity.location:
         person = str(activity.location.person)
     else:
@@ -30,7 +35,7 @@ def point_map_record(name, feat, point, activity, act_type):
     point_record = {
         'name' : name,
         'feature': feat, 
-        'time': str(activity.time), 
+        'time': str(time), 
         'locLat': str(point.y), 
         'locLon': str(point.x), 
         'category': str(activity.category),
@@ -68,7 +73,6 @@ def map_view(request):
     person_hash = request.GET.get('person_hash')
     person = Person.objects.get(hash=person_hash)
     
-    feature_points = collections.OrderedDict()
     feature_fences = collections.OrderedDict()
     wkt_w = WKTWriter()
 
@@ -76,14 +80,14 @@ def map_view(request):
     loc_activities = Activity.objects.filter(person=person,category="Location").order_by('time')
     j = 0    
 
-
-    # for the table summary. Group all similar location activities
+    # for the table summary. Group all similar location activities in order
     processed = []
     currlocation = None
     currentplace = None  
     # build list of lists of separate journeys to then add to ordered dict of features for template to draw
     journeys = [[]] 
     for l in loc_activities:
+        print l.time, l
         # current point
         pnt = Point(float(l.locLon),float(l.locLat), srid=3857)
         # see if in geofence but needs to be updated
@@ -167,10 +171,6 @@ def map_view(request):
             wkt_feat = wkt_w.write(pnt)
             reg_point =  point_map_record("journey: " + str(j), wkt_feat, pnt, l, "moving")
             journeys[j].append(reg_point)
-    
-    for i in range(0,len(journeys)):
-        if len(journeys[i]) > 0:
-            feature_points["journey "+str(i)] = journeys[i]
 
     # get additional known locations details for this person or their friends' homes
     all_friends = get_all_friends(person)
@@ -188,7 +188,11 @@ def map_view(request):
     context = {}
     context['known_locations'] = sorted(feature_fences.iteritems())    
     context['title'] = "Activity Map for " + person.name
-    context['point_collection'] = sorted(feature_points.iteritems())
+    context['point_collection'] = journeys #sorted(feature_points.items())
+    # for item in context['point_collection']:
+    #     for thing in item[1]:
+    #         print thing['time']
+    #     print "\n"
     context['selectperson'] = person
     context['location'] = 'all'
     context['time_from'] = 'all'
@@ -220,6 +224,50 @@ def calendar_view(request):
     template = loader.get_template('calendarView.html')  
     context = {}
     context['title'] = "Activity Calendar for " + person.name
+
+    activities = Activity.objects.filter(person=person,category="Location").order_by('time')
+    intervals = [] # make a list of all time intervals spent at home
+    current = []
+    for act in activities:
+        if len(current) > 1:
+            print "what happened???", current
+        if act.location:
+            if act.location == person.home:
+                if len(current)==0:
+                    current.append(act.time) #interval entered home
+                else:
+                    continue # still at home
+                    
+            else:
+                if len(current) > 0:
+                    current.append(act.time) # count time left house as time entered this new place
+                    intervals.append(current)
+                    current = []
+        else:
+            if len(current) > 0:
+                current.append(act.time) # time left house
+                intervals.append(current)
+                current = []
+
+    data = {} # keys are the dates values will be total time for that day in milliseconds
+    print intervals
+    for period in intervals:
+        pass
+    # we want total time NOT at home so will do total milliseconds in a day - total for each
+    # 86400000 milliseconds in one day
+    for day in data.keys():
+        data[day] = 86400000 - data[day]
+
+    # TODO: get csv return to work and format it with time data
+    # TODO: get second csv data to work also
+    # field_names = ['Date', 'Time_Spent_Out']
+    # response = HttpResponse(mimetype='text/csv')
+    # response['Content-Disposition'] = 'attachment;filename=export.csv'
+    # writer = csv.writer(response)
+    # writer.writerow(field_names)
+    # response.write(template.render(csv_data))
+    # return render_to_response(template, {'context': context})
+
     return JsonResponse(
         {'html': template.render(context, request)}
     )

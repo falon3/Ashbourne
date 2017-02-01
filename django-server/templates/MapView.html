@@ -26,7 +26,8 @@
             var pointList = [];
             var time_spent = {enter: null, exit: null};
             // add each path for each journey separately
-            journey.forEach(function(place) {
+            journey.forEach(function(place, i) {
+                console.log(i,": ", place);
                 var color = "orange";
                 if (layer.name == "Activities path") color ="green";
                 if (place.category == "Harmful") color = "red";
@@ -40,7 +41,10 @@
                 }
                 else var time = '';
 
-                if (place == journey[0] && !!last_exit) pointList.push(last_exit); // keep track of exit point to draw line from
+                if (i==0 && last_exit != null && pointList.length==0) {
+                    pointList.push(last_exit); // keep track of exit point to draw line from THIS IS BUGGY
+                    last_exit = null;
+                }
 
                 var shape_type = place.feature.substr(0, place.feature.indexOf(" "));
                 var geom = wkt_f.read(place.feature);
@@ -101,16 +105,15 @@
                     var coords = place.feature.replace(/[`~!@#$%^&*()_|+\=?;:'",<>\{\}\[\]\\\/]/gi, '').split(' ');
                     var path_pnt = new OpenLayers.Geometry.Point(coords[1], coords[2]);
                     
+                   
                     // if at last point in journey update last exit
-                    if (place == journey[journey.length -1]){
-                        if (journey.length == 1){
-                            pointList.push(path_pnt);
-                        }
-                        last_exit = path_pnt;                            
+                    if (place.act_type == 'exit place') {
+                        last_exit = path_pnt;  
+                        
                     }
                     else {
                         pointList.push(path_pnt);
-                    }
+                    } 
                 }
                 // after two points
 
@@ -198,8 +201,9 @@
      point_vectors = new OpenLayers.Layer.Vector("Activities path", {styleMap: path_style}); //GLOBALLY AVAILABLE
      
      map.addLayer(point_vectors);
-     points = {{point_collection|safe}}; // each activity dict including wkt features // GLOBAL
      
+     points = {{point_collection|safe}}; // each activity dict including wkt features // GLOBAL
+     console.log(points);
      show_vectors(point_vectors, points, currDateMin, currDateMax);
      
      // zoom center and add toggles

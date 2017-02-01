@@ -43,7 +43,7 @@ def gen_hash(id, length=None):
 
 class Person(models.Model):
     # id = models.PositiveIntegerField();
-    watch_id = models.CharField(max_length=20)
+    watch_id = models.CharField(max_length=20, null=True, blank=True)
     name = models.CharField(max_length=50)
     home = models.ForeignKey('Location', null=True, blank=True, related_name='home')
     phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$',

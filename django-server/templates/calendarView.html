@@ -157,6 +157,7 @@
                          .style("visibility", "hidden")
                          .text("a simple tooltip");
 
+//////         // PUT OWN DATA HERE AND MANIPULATE ACCORDINGLY
          d3.csv(csvdata, function(error, csv) {
              var data = d3.nest()
                           .key(function(d) { return d.Date; })
