@@ -27,7 +27,7 @@
             var time_spent = {enter: null, exit: null};
             // add each path for each journey separately
             journey.forEach(function(place, i) {
-                console.log(i,": ", place);
+                //console.log(i,": ", place);
                 var color = "orange";
                 if (layer.name == "Activities path") color ="green";
                 if (place.category == "Harmful") color = "red";
@@ -58,21 +58,23 @@
                     time_spent.exit = new Date(place.time);     
                     // keep track of total time spent there in millis 
                     var place_update = layer.getFeaturesByAttribute('title', place.name);
-                    
+                    if (place_update.length!=0){
                     // add total time spent there all together
-                    if (place_update[0].attributes.time != '' && typeof place_update[0].attributes.time==='number' ){
-                        place_update[0].attributes.time = place_update[0].attributes.time + (time_spent.exit.getTime() - time_spent.enter.getTime());
-                        
-                    }
-                    else {
-                        place_update[0].attributes.time = time_spent.exit.getTime() - time_spent.enter.getTime();   
-                    }
+                        if (place_update[0].attributes.time != '' && typeof place_update[0].attributes.time==='number' ){
+                            place_update[0].attributes.time = place_update[0].attributes.time + (time_spent.exit.getTime() - time_spent.enter.getTime());     
+                        }
+                        else {
+                            place_update[0].attributes.time = time_spent.exit.getTime() - time_spent.enter.getTime();   
+                        }
+                        layer.drawFeature(place_update[0]);
+                    
                     // update table
                     var curr_entry = $("table#listevent tbody tr > th:first-child").filter(function () {
                         return ($(this).text() == time_spent.enter.toLocaleString());
                     });
                     curr_entry.next().text(time_spent.exit.toLocaleString());
-                    layer.drawFeature(place_update[0]);
+                    }
+                    
                 }
                 geom.attributes = {
                     'label': '',
@@ -309,6 +311,9 @@
          defaultValues:{
              min: new Date(2016, 12, 15),
              max: new Date(2017, 1, 01)
+         },
+         step:{
+             days: 1
          }});
      var options = {
          'target': "map",
@@ -332,6 +337,7 @@
          $("table#listevent tbody tr > th:first-child").each(function(index, time) {
              var compare_start = moment($(time).text(), "YYYY-MM-DD, hh:mm:ss A").toDate(); // format date
              var compare_end = moment($(time).next().text(), "YYYY-MM-DD, hh:mm:ss a").toDate();
+             console.log("start: ",  compare_start.toLocaleString(), data.values.min.toLocaleString(), compare_start < data.values.min) 
              if (compare_start < data.values.min || compare_end > data.values.max){
                  $(time).parent().hide();
              }

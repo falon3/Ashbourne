@@ -23,6 +23,7 @@ import settings
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^calendar/', views.calendar_view),
+    url(r'^caldata/(?P<person_hash>[a-z0-9]{10})', views.calendar_data),
     url(r'^map/', views.map_view),
     url(r'^add_record/', views.add_record_view, name='FirstMap-index'),
     url(r'^get_info/', views.test_get_info),
@@ -32,5 +33,5 @@ urlpatterns = [
     url(r'^get_locs_in_time/', views.get_locs_in_time),
     url(r'^get_calls_in_time/', views.get_calls_in_time),
     url(r'^get_sms_in_time/', views.get_sms_in_time),
-    url(r'^', views.get_home)
+    url(r'^', views.get_home) 
 ]

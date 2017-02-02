@@ -10,6 +10,7 @@ from itertools import chain
 from vectorformats.Formats import Django, GeoJSON
 from geojson import Feature, FeatureCollection
 import dateutil.parser
+import csv
 import datetime
 import geojson
 import json
@@ -73,7 +74,7 @@ def map_view(request):
     person_hash = request.GET.get('person_hash')
     person = Person.objects.get(hash=person_hash)
     
-    feature_fences = collections.OrderedDict()
+    
     wkt_w = WKTWriter()
 
     # get activity details from 'Location' activities for this person
@@ -84,8 +85,9 @@ def map_view(request):
     processed = []
     currlocation = None
     currentplace = None  
-    # build list of lists of separate journeys to then add to ordered dict of features for template to draw
-    journeys = [[]] 
+    
+    journeys = [[]] # list of lists of separate journey dicts to then add to ordered dict of features for template to draw
+    feature_fences = [] # list of lists of locations to add
     for l in loc_activities:
         # current point
         pnt = Point(float(l.locLon),float(l.locLat), srid=3857)
@@ -180,12 +182,12 @@ def map_view(request):
     for f in fences:
         wkt_fence = wkt_w.write(f.fence)
         to_add = geofence_record(f, wkt_fence, False)
-        feature_fences[str(f.name)] = [to_add]        
+        feature_fences.append([to_add])    
 
     # send all the data back to the template
     template = loader.get_template('MapView.html')   
     context = {}
-    context['known_locations'] = sorted(feature_fences.iteritems())    
+    context['known_locations'] = feature_fences  
     context['title'] = "Activity Map for " + person.name
     context['point_collection'] = journeys
     context['selectperson'] = person
@@ -219,6 +221,16 @@ def calendar_view(request):
     template = loader.get_template('calendarView.html')  
     context = {}
     context['title'] = "Activity Calendar for " + person.name
+    context['person'] = person
+
+    return JsonResponse(
+        {'html': template.render(context, request)}
+    )
+
+#handles ajax request for calendar data to /caldata?person_hash=
+def calendar_data(request, person_hash):
+    print("Person", person_hash)
+    person = Person.objects.get(hash=person_hash)
 
     activities = Activity.objects.filter(person=person,category="Location").order_by('time')
     intervals = [] # make a list of all time intervals spent at home
@@ -246,31 +258,29 @@ def calendar_view(request):
                 current = []
 
     data = {} # keys are the dates values will be total time for that day in milliseconds
-    print intervals
     data = calculate_timedata(data, intervals)
     # we want total time NOT at home so will do total in a day - total for each
     for day in data.keys():
-        data[day] = datetime.timedelta(1) - data[day]
-    print data
-    # TODO: get csv return to work and format it with time data
-    # TODO: get second csv data to work also
-    # field_names = ['Date', 'Time_Spent_Out']
-    # response = HttpResponse(mimetype='text/csv')
-    # response['Content-Disposition'] = 'attachment;filename=export.csv'
-    # writer = csv.writer(response)
-    # writer.writerow(field_names)
-    # response.write(template.render(csv_data))
-    # return render_to_response(template, {'context': context})
+        data[day] = (datetime.timedelta(1) - data[day]).seconds
 
-    return JsonResponse(
-        {'html': template.render(context, request)}
-    )
+    # TODO: get second csv data to work also
+    field_names = ['Date', 'Time_Spent_Out']
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment;filename=export.csv'
+    writer = csv.writer(response)
+    writer.writerow(field_names)
+    for entry in data.keys():
+        writer.writerow([entry, data[entry]])
+    print response
+    return response
+
+
+    
 
 def calculate_timedata(data_dict, interval_list): 
     if not interval_list:
         return data_dict
     for period in interval_list:
-        print type(period[0])
         if period[0].date() != period[1].date(): # interval goes overnight so add one for each day
             start = datetime.datetime(period[0].year, period[0].month, period[0].day, 0, 0, 0)
             to_add = start + datetime.timedelta(1) - period[0] # time from current day
@@ -282,7 +292,6 @@ def calculate_timedata(data_dict, interval_list):
             sublist = []
             data_dict = calculate_timedata(data_dict, sublist.append(period)) # recursively add other day data for this interval then continue
 
-            print period[1]-period[0], type(period[1]-period[0])
         else:
             to_add = period[1]-period[0]
             if period[0].date() not in data_dict.keys():

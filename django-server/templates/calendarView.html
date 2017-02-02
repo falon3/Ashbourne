@@ -41,17 +41,10 @@
  }
 
  /* color ranges */
- .RdYlGn .q0-11{fill:rgb(165,0,38)}
- .RdYlGn .q1-11{fill:rgb(215,48,39)}
- .RdYlGn .q2-11{fill:rgb(244,109,67)}
- .RdYlGn .q3-11{fill:rgb(253,174,97)}
- .RdYlGn .q4-11{fill:rgb(254,224,139)}
- .RdYlGn .q5-11{fill:rgb(255,255,191)}
- .RdYlGn .q6-11{fill:rgb(217,239,139)}
- .RdYlGn .q7-11{fill:rgb(166,217,106)}
- .RdYlGn .q8-11{fill:rgb(102,189,99)}
- .RdYlGn .q9-11{fill:rgb(26,152,80)}
- .RdYlGn .q10-11{fill:rgb(0,104,55)}
+ .RdYlGn .q0-4{fill:rgb(165,0,38)}
+ .RdYlGn .q1-4{fill:rgb(255,255,191)}
+ .RdYlGn .q2-4{fill:rgb(166,217,106)}
+ .RdYlGn .q3-4{fill:rgb(0,104,55)}
 
  /* hover info */
  #tooltip {
@@ -69,7 +62,8 @@
     <div id="calendar2" ></div>
     <script>
      $(document).ready(function (){
-         calendarStrip("/static/dji.csv", "div#calendar");
+         var hash = "{{person.hash}}";
+         calendarStrip("/caldata/"+hash, "div#calendar");
          calendarStrip("/static/dji.csv", "div#calendar2");
      });
 
@@ -91,8 +85,8 @@
              format = d3.time.format("%Y-%m-%d");
 
          var color = d3.scale.quantize()
-                       .domain([-.05, .05])
-                       .range(d3.range(11).map(function(d) { return "q" + d + "-11"; }));
+                       .domain([0.0, 1.0])
+                       .range(d3.range(4).map(function(d) { return "q" + d + "-4"; }));
 
          var svg = d3.select(div_id).selectAll("svg")
                      .data(d3.range(2017, 2018))
@@ -161,7 +155,7 @@
          d3.csv(csvdata, function(error, csv) {
              var data = d3.nest()
                           .key(function(d) { return d.Date; })
-                          .rollup(function(d) { return (d[0].Close - d[0].Open) / d[0].Open; })
+                          .rollup(function(d) { return (d[0].Time_Spent_Out) / 86400; })
                           .map(csv);
 
              rect.filter(function(d) { return d in data; })
