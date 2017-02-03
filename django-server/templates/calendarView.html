@@ -40,11 +40,12 @@
      font-size: 1.5em;
  }
 
+/*TODO: make these colors way nicer! better range for 4*/
  /* color ranges */
- .RdYlGn .q0-4{fill:rgb(165,0,38)}
- .RdYlGn .q1-4{fill:rgb(255,255,191)}
- .RdYlGn .q2-4{fill:rgb(166,217,106)}
- .RdYlGn .q3-4{fill:rgb(0,104,55)}
+ .RdYlGn .q0-4{fill:rgb(255,255,191)}
+ .RdYlGn .q1-4{fill:rgb(166,217,106)}
+ .RdYlGn .q2-4{fill:rgb(0,104,55)}
+ .RdYlGn .q3-4{fill:rgb(165,0,38)}
 
  /* hover info */
  #tooltip {
@@ -63,8 +64,8 @@
     <script>
      $(document).ready(function (){
          var hash = "{{person.hash}}";
-         calendarStrip("/caldata/"+hash, "div#calendar");
-         calendarStrip("/static/dji.csv", "div#calendar2");
+         calendarStrip("/movecdata/"+hash, "div#calendar");
+         calendarStrip("/socialcdata/"+hash, "div#calendar2");
      });
 
      function calendarStrip(csvdata, div_id){
@@ -155,7 +156,7 @@
          d3.csv(csvdata, function(error, csv) {
              var data = d3.nest()
                           .key(function(d) { return d.Date; })
-                          .rollup(function(d) { return (d[0].Time_Spent_Out) / 86400; })
+                          .rollup(function(d) { return (d[0].Time_Spent) / 86400; })
                           .map(csv);
 
              rect.filter(function(d) { return d in data; })

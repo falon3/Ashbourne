@@ -227,17 +227,62 @@ def calendar_view(request):
         {'html': template.render(context, request)}
     )
 
-#handles ajax request for calendar data to /caldata?person_hash=
-def calendar_data(request, person_hash):
-    print("Person", person_hash)
+#handles ajax request for calendar data to /socialcdata/person_hash/
+def social_cdata(request, person_hash):
     person = Person.objects.get(hash=person_hash)
+    activities = Activity.objects.filter(person=person,category="Location").order_by('time')
+    friends = get_all_friends(person)
+    intervals = [] # make a list of all time intervals spent at home
+    current = []
 
+    for act in activities:
+        if len(current) > 2:
+            print "what happened???", current
+        if act.location:
+            categories = [str(cat) for cat in act.location.category]
+            print(categories, friends, act.location.person, "Social" in categories, "Home" in categories and act.location.person in friends)
+            print "\n"
+            if "Social" in categories or ("Home" in categories and act.location.person in friends):
+                if len(current)==0:
+                    print "DATE" , act.time.date()
+                    current.append(act.time) #interval entered social location
+                else:
+                    continue # still socializing
+                
+            else:
+                if len(current) > 0:
+                    current.append(act.time) # count time left social place as time entered this new place
+                    intervals.append(current)
+                    current = []
+        else:
+            if len(current) > 0:
+                current.append(act.time) # time left social place
+                intervals.append(current)
+                current = []
+
+    data = {} # keys are the dates values will be total time for that day 
+    data = calculate_timedata(data, intervals)
+    print data
+    # we want total time socializing each day in seconds
+    for day in data.keys():
+        data[day] = data[day].seconds
+
+    field_names = ['Date', 'Time_Spent']
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment;filename=export2.csv'
+    writer = csv.writer(response)
+    writer.writerow(field_names)
+    for entry in data.keys():
+        writer.writerow([entry, data[entry]])
+    return response
+
+#handles ajax request for calendar data to /movecdata/person_hash/
+def move_cdata(request, person_hash):
+    person = Person.objects.get(hash=person_hash)
     activities = Activity.objects.filter(person=person,category="Location").order_by('time')
     intervals = [] # make a list of all time intervals spent at home
     current = []
     for act in activities:
-        if len(current) > 2:
-            print "what happened???", current
         if act.location:
             if act.location == person.home:
                 if len(current)==0:
@@ -263,20 +308,16 @@ def calendar_data(request, person_hash):
     for day in data.keys():
         data[day] = (datetime.timedelta(1) - data[day]).seconds
 
-    # TODO: get second csv data to work also
-    field_names = ['Date', 'Time_Spent_Out']
+    field_names = ['Date', 'Time_Spent']
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment;filename=export.csv'
     writer = csv.writer(response)
     writer.writerow(field_names)
     for entry in data.keys():
         writer.writerow([entry, data[entry]])
-    print response
     return response
-
-
     
-
+# TODO: bug with overnight activities!
 def calculate_timedata(data_dict, interval_list): 
     if not interval_list:
         return data_dict
