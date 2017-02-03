@@ -172,6 +172,15 @@ def map_view(request):
             wkt_feat = wkt_w.write(pnt)
             reg_point =  point_map_record("journey: " + str(j), wkt_feat, pnt, l, "moving")
             journeys[j].append(reg_point)
+    
+    # if at end and never left current place add last recroded point in location as 'exit'
+    if len(journeys)>0:
+        last_entry = journeys[-1][-1]
+        if last_entry['act_type'] == 'geo_fence':
+            last_cnt =  GEOSGeometry(last_entry['feature']).centroid
+            wkt_feat = wkt_w.write(last_cnt)
+            to_add = point_map_record(last_entry['name'], wkt_feat, last_cnt, l, "exit place")
+            journeys[-1].append(to_add)
 
     # get additional known locations details for this person or their friends' homes
     all_friends = get_all_friends(person)
@@ -230,21 +239,16 @@ def calendar_view(request):
 #handles ajax request for calendar data to /socialcdata/person_hash/
 def social_cdata(request, person_hash):
     person = Person.objects.get(hash=person_hash)
-    activities = Activity.objects.filter(person=person,category="Location").order_by('time')
+    activities = list(Activity.objects.filter(person=person,category="Location").order_by('time'))
     friends = get_all_friends(person)
     intervals = [] # make a list of all time intervals spent at home
     current = []
 
     for act in activities:
-        if len(current) > 2:
-            print "what happened???", current
         if act.location:
             categories = [str(cat) for cat in act.location.category]
-            print(categories, friends, act.location.person, "Social" in categories, "Home" in categories and act.location.person in friends)
-            print "\n"
             if "Social" in categories or ("Home" in categories and act.location.person in friends):
-                if len(current)==0:
-                    print "DATE" , act.time.date()
+                if len(current)==0 or (len(current)==1 and act == activities[-1]): # also add last one
                     current.append(act.time) #interval entered social location
                 else:
                     continue # still socializing
@@ -260,33 +264,27 @@ def social_cdata(request, person_hash):
                 intervals.append(current)
                 current = []
 
+    if len(current)>1: # if missed one end point
+        intervals.append(current)
+
     data = {} # keys are the dates values will be total time for that day 
-    data = calculate_timedata(data, intervals)
-    print data
+    calculate_timedata(data, intervals)
+
     # we want total time socializing each day in seconds
     for day in data.keys():
         data[day] = data[day].seconds
-
-    field_names = ['Date', 'Time_Spent']
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment;filename=export2.csv'
-    writer = csv.writer(response)
-    writer.writerow(field_names)
-    for entry in data.keys():
-        writer.writerow([entry, data[entry]])
-    return response
+    return send_csv_data(data)
 
 #handles ajax request for calendar data to /movecdata/person_hash/
 def move_cdata(request, person_hash):
     person = Person.objects.get(hash=person_hash)
-    activities = Activity.objects.filter(person=person,category="Location").order_by('time')
+    activities = list(Activity.objects.filter(person=person,category="Location").order_by('time'))
     intervals = [] # make a list of all time intervals spent at home
     current = []
     for act in activities:
         if act.location:
             if act.location == person.home:
-                if len(current)==0:
-                    print "DATE" , act.time.date()
+                if len(current)==0 or (len(current)==1 and act == activities[-1]):
                     current.append(act.time) #interval entered home
                 else:
                     continue # still at home
@@ -301,13 +299,18 @@ def move_cdata(request, person_hash):
                 current.append(act.time) # time left house
                 intervals.append(current)
                 current = []
-
+ 
+    if len(current)>1:
+        intervals.append(current)
     data = {} # keys are the dates values will be total time for that day in milliseconds
-    data = calculate_timedata(data, intervals)
+    calculate_timedata(data, intervals)
     # we want total time NOT at home so will do total in a day - total for each
     for day in data.keys():
         data[day] = (datetime.timedelta(1) - data[day]).seconds
+    return send_csv_data(data)
 
+# helper function to send csv data back from ajax request    
+def send_csv_data(data):
     field_names = ['Date', 'Time_Spent']
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment;filename=export.csv'
@@ -317,21 +320,23 @@ def move_cdata(request, person_hash):
         writer.writerow([entry, data[entry]])
     return response
     
-# TODO: bug with overnight activities!
+# helper function gets time stats puts them in given dict
 def calculate_timedata(data_dict, interval_list): 
     if not interval_list:
-        return data_dict
+        return
     for period in interval_list:
         if period[0].date() != period[1].date(): # interval goes overnight so add one for each day
-            start = datetime.datetime(period[0].year, period[0].month, period[0].day, 0, 0, 0)
-            to_add = start + datetime.timedelta(1) - period[0] # time from current day
+            next_start = datetime.datetime(period[0].year, period[0].month, period[0].day) + datetime.timedelta(1)
+            to_add = next_start - period[0] # time from current day
+
             if period[0].date() not in data_dict.keys():
                 data_dict[period[0].date()]= to_add
             else:
                 data_dict[period[0].date()]+= to_add
-            period[0] = start + datetime.timedelta(1) # now start at next day til end
+            period[0] = next_start # now start at next day til end
             sublist = []
-            data_dict = calculate_timedata(data_dict, sublist.append(period)) # recursively add other day data for this interval then continue
+            sublist.append(period)
+            calculate_timedata(data_dict, sublist)
 
         else:
             to_add = period[1]-period[0]
@@ -339,7 +344,7 @@ def calculate_timedata(data_dict, interval_list):
                 data_dict[period[0].date()]= to_add
             else:
                 data_dict[period[0].date()]+= to_add
-    return data_dict
+    return
 
 # handles POST to /add_record/
 # watch data from emails is added by callng this method

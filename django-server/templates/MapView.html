@@ -27,15 +27,16 @@
             var time_spent = {enter: null, exit: null};
             // add each path for each journey separately
             journey.forEach(function(place, i) {
-                //console.log(i,": ", place);
                 var color = "orange";
                 if (layer.name == "Activities path") color ="green";
                 if (place.category == "Harmful") color = "red";
                             
                 if (place.time != null) {
                     var time = place.time; 
+                    time_compare = new Date(time);
+                    time_compare.setHours(0,0,0,0);
                     // skip all activities not within the date range
-                    if (new Date(time) < datemin  || new Date(time) > datemax){
+                    if (time_compare < datemin  || time_compare > datemax){
                         return
                     }
                 }
@@ -205,7 +206,6 @@
      map.addLayer(point_vectors);
      
      points = {{point_collection|safe}}; // each activity dict including wkt features // GLOBAL
-     console.log(points);
      show_vectors(point_vectors, points, currDateMin, currDateMax);
      
      // zoom center and add toggles
@@ -222,6 +222,7 @@
          }
      );
      map.addControl(selectFeature);
+     selectFeature.activate();
 
      // detect click events onlocations
      function clickNotice(feat) {
@@ -305,12 +306,12 @@
 
      slider = $("#slider").dateRangeSlider({
          bounds:{
-             min: new Date(2016, 12, 01),
-             max: new Date(2018, 01, 01)
+             min: new Date(2016, 12, 01, 0, 0, 0),
+             max: new Date(2018, 01, 01, 0, 0, 0)
          },
          defaultValues:{
-             min: new Date(2016, 12, 15),
-             max: new Date(2017, 1, 01)
+             min: new Date(2016, 12, 15, 0, 0, 0),
+             max: new Date(2017, 01, 01, 0, 0, 0)
          },
          step:{
              days: 1
@@ -330,14 +331,16 @@
      var path_layer = map.getLayersByName("Activities path")[0];
      // detect changes in daterange slider
      $("#slider").bind("valuesChanged", function(e, data){
-         path_layer.removeAllFeatures(); //remove  all features and re-add them within the time limits       
+         while( map.popups.length ) map.removePopup(map.popups[0]); // remove all popups
+         selectFeature.unselectAll(); // unselect all features
+         path_layer.removeAllFeatures(); //remove  all features and re-add them within the time limits   
          show_vectors(path_layer, points, data.values.min, data.values.max);
 
          // this is the date entry of each activity table row
          $("table#listevent tbody tr > th:first-child").each(function(index, time) {
              var compare_start = moment($(time).text(), "YYYY-MM-DD, hh:mm:ss A").toDate(); // format date
-             var compare_end = moment($(time).next().text(), "YYYY-MM-DD, hh:mm:ss a").toDate();
-             console.log("start: ",  compare_start.toLocaleString(), data.values.min.toLocaleString(), compare_start < data.values.min) 
+             var compare_end = moment($(time).next().text(), "YYYY-MM-DD, hh:mm:ss a").toDate(); // only care about date not time
+             compare_end.setHours(0,0,0,0);
              if (compare_start < data.values.min || compare_end > data.values.max){
                  $(time).parent().hide();
              }
