@@ -37,15 +37,31 @@
      stroke-width: 4px;
  }
  .year-title {
-     font-size: 1.5em;
+     font-size: 2em;
+ }
+
+ .input-color {
+     position: relative;
+ }
+ .input-color input {
+     padding-left: 20px;
+ }
+ .input-color .color-box {
+     width: 10px;
+     height: 10px;
+     display: inline-block;
+     background-color: #ccc;
+     position: absolute;
+     left: 5px;
+     top: 5px;
  }
 
 /*TODO: make these colors way nicer! better range for 4*/
  /* color ranges */
- .RdYlGn .q0-4{fill:rgb(255,255,191)}
- .RdYlGn .q1-4{fill:rgb(166,217,106)}
- .RdYlGn .q2-4{fill:rgb(0,104,55)}
- .RdYlGn .q3-4{fill:rgb(165,0,38)}
+ .RdYlGn .q0-4{fill:rgb(255,178,102)}
+ .RdYlGn .q1-4{fill:rgb(204,102,0)}
+ .RdYlGn .q2-4{fill:rgb(102,0,0)}
+ .RdYlGn .q3-4{fill:rgb(51,25,0)}
 
  /* hover info */
  #tooltip {
@@ -55,20 +71,35 @@
  }
 </style>
 <h2 style="text-align:center;" >{{title}}</h2>
+<h5 style="text-align:left; padding-left:10px;">Activity Level Legend</h5>
+<div class="input-color">
+        <!-- -Legend boxes -->
+        <input type="text" value="0-25%" />
+        <div class="color-box" style="background-color: rgb(255,178,102);"></div>
+    </div><div class="input-color">
+        <input type="text" value="26-50%" />
+        <div class="color-box" style="background-color: rgb(204,102,0);"></div>
+    </div><div class="input-color">
+        <input type="text" value="51-75%" />
+        <div class="color-box" style="background-color: rgb(102,0,0);"></div>
+    </div><div class="input-color">
+        <input type="text" value="76-100%" />
+        <div class="color-box" style="background-color: rgb(51,25,0)"></div>
+    </div>
 
-<h3 style="text-align:left; padding-left:20px;" >Movement Calendar</h3>
-    <div id="calendar" >
-    </div> 
-    <h3 style="text-align:left; padding-left:20px;" >Social Calendar</h2>
-    <div id="calendar2" ></div>
+    <!-- -movement and social calendars -->
+    
+    <div id="calendar" style="margin-top:0px;"></div> 
+
+    <div id="calendar2" style="margin-top:0px;" ></div>
     <script>
      $(document).ready(function (){
          var hash = "{{person.hash}}";
-         calendarStrip("/movecdata/"+hash, "div#calendar");
-         calendarStrip("/socialcdata/"+hash, "div#calendar2");
+         calendarStrip("/movecdata/"+hash, "div#calendar", "Movement Calendar");
+         calendarStrip("/socialcdata/"+hash, "div#calendar2", "Social Calendar");
      });
 
-     function calendarStrip(csvdata, div_id){
+     function calendarStrip(csvdata, div_id, cal_title){
          var width = 1185,
              height = 450,
              cellSize = 23; // cell size
@@ -196,7 +227,9 @@
              return t0.toLocaleString("en-us", { month: "long" });
          }
          function yearTitle (t0) {
-             return t0.toString().split(" ")[3];
+             var year = t0.toString().split(" ")[3];
+             var title = cal_title + " for " + year;
+             return title
          }
      }
 
