@@ -55,8 +55,11 @@
      left: 5px;
      top: 5px;
  }
+ table, th, td {
+     border: 1px solid black;
+ }
 
-/*TODO: make these colors way nicer! better range for 4*/
+ /*TODO: make these colors way nicer! better range for 4*/
  /* color ranges */
  .RdYlGn .q0-4{fill:rgb(255,178,102)}
  .RdYlGn .q1-4{fill:rgb(204,102,0)}
@@ -73,25 +76,66 @@
 <h2 style="text-align:center;" >{{title}}</h2>
 <h5 style="text-align:left; padding-left:10px;">Activity Level Legend</h5>
 <div class="input-color">
-        <!-- -Legend boxes -->
-        <input type="text" value="0-25%" />
-        <div class="color-box" style="background-color: rgb(255,178,102);"></div>
-    </div><div class="input-color">
-        <input type="text" value="26-50%" />
-        <div class="color-box" style="background-color: rgb(204,102,0);"></div>
-    </div><div class="input-color">
-        <input type="text" value="51-75%" />
-        <div class="color-box" style="background-color: rgb(102,0,0);"></div>
-    </div><div class="input-color">
-        <input type="text" value="76-100%" />
-        <div class="color-box" style="background-color: rgb(51,25,0)"></div>
-    </div>
+    <!-- -Legend boxes -->
+    <input type="text" value="0-25%" />
+    <div class="color-box" style="background-color: rgb(255,178,102);"></div>
+</div><div class="input-color">
+    <input type="text" value="26-50%" />
+    <div class="color-box" style="background-color: rgb(204,102,0);"></div>
+</div><div class="input-color">
+    <input type="text" value="51-75%" />
+    <div class="color-box" style="background-color: rgb(102,0,0);"></div>
+</div><div class="input-color">
+    <input type="text" value="76-100%" />
+    <div class="color-box" style="background-color: rgb(51,25,0)"></div>
+</div>
 
-    <!-- -movement and social calendars -->
+<!-- -movement and social calendars -->
+
+<div id="calendar" style="margin-top:0px;"></div> 
+<table class="table" id="summary">
+    <thead class="thead-inverse">
+        <tr>
+            <th> </th>
+            <th>Date</th>
+            <th>% movement time</th>
+        </tr>
+    </thead>
+    <tbody>
+        <td>Max Movement</td>
+        <td id="maxdate"></td>
+        <td id="max"></td>
+        </tr>
+        <td>Min Movement</td>
+        <td id="mindate"></td>
+        <td id="min"></td>
+        </tr>
+        
+    </tbody>
+</table>
     
-    <div id="calendar" style="margin-top:0px;"></div> 
+<div id="calendar2" style="margin-top:0px;" ></div>
+<table class="table" id="summary">
+    <thead class="thead-inverse">
+        <tr>
+            <th></th>
+            <th>Date</th>
+            <th>% social time</th>
+        </tr>
+    </thead>
+    <tbody>
+        <td>Max Social</td>
+        <td id="maxdate"></td>
+        <td id="max"></td>
+        </tr>
+        <td>Min Social</td>
+        <td id="mindate"></td>
+        <td id="min"></td>
+        </tr>
+        
+    </tbody>
+</table>
 
-    <div id="calendar2" style="margin-top:0px;" ></div>
     <script>
      $(document).ready(function (){
          var hash = "{{person.hash}}";
@@ -183,7 +227,6 @@
                          .style("visibility", "hidden")
                          .text("a simple tooltip");
 
-//////         // PUT OWN DATA HERE AND MANIPULATE ACCORDINGLY
          d3.csv(csvdata, function(error, csv) {
              var data = d3.nest()
                           .key(function(d) { return d.Date; })
@@ -217,7 +260,19 @@
                  var $tooltip = $("#tooltip");
                  $tooltip.empty();
              }
-
+             console.log("data", data);
+             var maxKey = Object.keys(data).sort(function (a, b) {
+                 return data[a] < data[b];
+             })[0];
+             var minKey = Object.keys(data).sort(function (a, b) {
+                 return data[a] > data[b];
+             })[0];
+             console.log("min", minKey, data[minKey], "max", maxKey, data[maxKey]);
+             $(div_id).next().find('td#maxdate').text(maxKey);
+             $(div_id).next().find('td#mindate').text(minKey);
+             $(div_id).next().find('td#min').text(data[minKey]);
+             $(div_id).next().find('td#max').text(data[maxKey]);
+             //$(div_id).next().text("helloworld");
          });
 
          function dayTitle (t0) {
