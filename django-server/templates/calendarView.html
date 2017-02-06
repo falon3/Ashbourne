@@ -149,14 +149,16 @@
          var no_months_in_a_row = Math.floor(width / (cellSize * 7 +25));
          var shift_up = cellSize * 3;
 
-         var day = d3.timeFormat("%w"), // day of the week
-             day_of_month = d3.timeFormat("%e") // day of the month
-             day_of_year = d3.timeFormat("%j")
-             week = d3.timeFormat("%U"), // week number of the year
-             month = d3.timeFormat("%m"), // month number
-             year = d3.timeFormat("%Y"),
-             percent = d3.format(".1%"),
-             format = d3.timeFormat("%Y-%m-%d");
+         //var percent = d3.format(".1%"),
+         //    format = d3.timeFormat("%Y-%m-%d");
+          var day = d3.timeFormat("%w"), // day of the week
+            day_of_month = d3.timeFormat("%e") // day of the month
+            day_of_year = d3.timeFormat("%j")
+            week = d3.timeFormat("%U"), // week number of the year
+            month = d3.timeFormat("%m"), // month number
+            year = d3.timeFormat("%Y"),
+            percent = d3.format(".1%"),
+            format = d3.timeFormat("%Y-%m-%d"); 
 
          var color = d3.scaleQuantize()
                        .domain([0.0, 1.0])
@@ -231,17 +233,21 @@
                           .rollup(function(d) { return (d[0].Time_Spent) / 86400; })
                           .map(csv);
 
-             rect.filter(function(d) { return d in data; })
-                 .attr("class", function(d) { return "day " + color(data[d]); })
+             rect.filter(function(d) {   return data.has(d); })
+                 .attr("class", function(d) { 
+                     console.log("data d: ", data.get(d), color(data.get(d)));
+                     return "day " + color(data.get(d)); 
+                 })
                  .select("title")
-                 .text(function(d) { return d + ": " + percent(data[d]); });
+                 .text(function(d) { return d + ": " + percent(data.get(d)); });
 
+             
              //  Tooltip
              rect.on("mouseover", mouseover);
              rect.on("mouseout", mouseout);
              function mouseover(d) {
                  tooltip.style("visibility", "visible");
-                 var percent_data = (data[d] !== undefined) ? percent(data[d]) : percent(0);
+                 var percent_data = (data.get(d) !== undefined) ? percent(data.get(d)) : percent(0);
                  var purchase_text = d + ": " + percent_data;
 
                  tooltip.transition()        
@@ -258,16 +264,16 @@
                  var $tooltip = $("#tooltip");
                  $tooltip.empty();
              }
-             console.log("data", data);
-             var maxKey = Object.keys(data).sort(function (a, b) {
+             console.log("data", data, data['2017-02-02']);
+             maxKey = Object.keys(data).sort(function (a, b) {
                  return data[a] < data[b];
              })[0];
              var minKey = Object.keys(data).sort(function (a, b) {
-                 return data[a] > data[b];
+                 return data.get(a) > data.get(b);
              })[0];
              console.log("min", minKey, (data[minKey]*100).toFixed(1), "max", maxKey, (data[maxKey]*100).toFixed(1));
-             $(div_id).next().find('td#maxdate').text(maxKey);
-             $(div_id).next().find('td#mindate').text(minKey);
+             $(div_id).next().find('td#maxdate').text(maxKey.replace('$',''));
+             $(div_id).next().find('td#mindate').text(minKey.replace('$',''));
              $(div_id).next().find('td#min').text((data[minKey]*100).toFixed(1) + " %");
              $(div_id).next().find('td#max').text((data[maxKey]*100).toFixed(1) + " %");
              //$(div_id).next().text("helloworld");
