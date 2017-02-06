@@ -59,7 +59,6 @@
      border: 1px solid black;
  }
 
- /*TODO: make these colors way nicer! better range for 4*/
  /* color ranges */
  .RdYlGn .q0-4{fill:rgb(255,178,102)}
  .RdYlGn .q1-4{fill:rgb(204,102,0)}
@@ -77,16 +76,16 @@
 <h5 style="text-align:left; padding-left:10px;">Activity Level Legend</h5>
 <div class="input-color">
     <!-- -Legend boxes -->
-    <input type="text" value="0-25%" />
+    <input type="text" value="0-5 hours" />
     <div class="color-box" style="background-color: rgb(255,178,102);"></div>
 </div><div class="input-color">
-    <input type="text" value="26-50%" />
+    <input type="text" value="6-12 hours" />
     <div class="color-box" style="background-color: rgb(204,102,0);"></div>
 </div><div class="input-color">
-    <input type="text" value="51-75%" />
+    <input type="text" value="13 to 18 hours" />
     <div class="color-box" style="background-color: rgb(102,0,0);"></div>
 </div><div class="input-color">
-    <input type="text" value="76-100%" />
+    <input type="text" value="19 to 24 hours" />
     <div class="color-box" style="background-color: rgb(51,25,0)"></div>
 </div>
 
@@ -96,17 +95,17 @@
 <table class="table" id="summary">
     <thead class="thead-inverse">
         <tr>
-            <th> </th>
+            <th>Summary</th>
             <th>Date</th>
-            <th>% movement time</th>
+            <th>movement amount</th>
         </tr>
     </thead>
     <tbody>
-        <td>Max Movement</td>
+        <td>Max Day</td>
         <td id="maxdate"></td>
         <td id="max"></td>
         </tr>
-        <td>Min Movement</td>
+        <td>Min Day</td>
         <td id="mindate"></td>
         <td id="min"></td>
         </tr>
@@ -118,17 +117,17 @@
 <table class="table" id="summary">
     <thead class="thead-inverse">
         <tr>
-            <th></th>
+            <th>Summary</th>
             <th>Date</th>
-            <th>% social time</th>
+            <th>social amount</th>
         </tr>
     </thead>
     <tbody>
-        <td>Max Social</td>
+        <td>Max Day</td>
         <td id="maxdate"></td>
         <td id="max"></td>
         </tr>
-        <td>Min Social</td>
+        <td>Min Day</td>
         <td id="mindate"></td>
         <td id="min"></td>
         </tr>
@@ -138,9 +137,8 @@
 
     <script>
      $(document).ready(function (){
-         var hash = "{{person.hash}}";
-         calendarStrip("/movecdata/"+hash, "div#calendar", "Movement Calendar");
-         calendarStrip("/socialcdata/"+hash, "div#calendar2", "Social Calendar");
+         calendarStrip("/movecdata/{{person.hash}}", "div#calendar", "Movement Calendar");
+         calendarStrip("/socialcdata/{{person.hash}}", "div#calendar2", "Social Calendar");
      });
 
      function calendarStrip(csvdata, div_id, cal_title){
@@ -151,16 +149,16 @@
          var no_months_in_a_row = Math.floor(width / (cellSize * 7 +25));
          var shift_up = cellSize * 3;
 
-         var day = d3.time.format("%w"), // day of the week
-             day_of_month = d3.time.format("%e") // day of the month
-             day_of_year = d3.time.format("%j")
-             week = d3.time.format("%U"), // week number of the year
-             month = d3.time.format("%m"), // month number
-             year = d3.time.format("%Y"),
+         var day = d3.timeFormat("%w"), // day of the week
+             day_of_month = d3.timeFormat("%e") // day of the month
+             day_of_year = d3.timeFormat("%j")
+             week = d3.timeFormat("%U"), // week number of the year
+             month = d3.timeFormat("%m"), // month number
+             year = d3.timeFormat("%Y"),
              percent = d3.format(".1%"),
-             format = d3.time.format("%Y-%m-%d");
+             format = d3.timeFormat("%Y-%m-%d");
 
-         var color = d3.scale.quantize()
+         var color = d3.scaleQuantize()
                        .domain([0.0, 1.0])
                        .range(d3.range(4).map(function(d) { return "q" + d + "-4"; }));
 
@@ -174,7 +172,7 @@
 
              var rect = svg.selectAll(".day")
                            .data(function(d) { 
-                               return d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1));
+                               return d3.timeDays(new Date(d, 0, 1), new Date(d + 1, 0, 1));
                            })
                            .enter().append("rect")
                            .attr("class", "day")
@@ -193,7 +191,7 @@
 
          var month_titles = svg.selectAll(".month-title")  // Jan, Feb, Mar and the whatnot
                                .data(function(d) { 
-                                   return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+                                   return d3.timeMonths(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
                                .enter().append("text")
                                .text(monthTitle)
                                .attr("x", function(d, i) {
@@ -210,7 +208,7 @@
 
          var year_titles = svg.selectAll(".year-title")  // Jan, Feb, Mar and the whatnot
                               .data(function(d) { 
-                                  return d3.time.years(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+                                  return d3.timeYears(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
                               .enter().append("text")
                               .text(yearTitle)
                               .attr("x", function(d, i) { return width/2 - 100; })
@@ -267,11 +265,11 @@
              var minKey = Object.keys(data).sort(function (a, b) {
                  return data[a] > data[b];
              })[0];
-             console.log("min", minKey, data[minKey], "max", maxKey, data[maxKey]);
+             console.log("min", minKey, (data[minKey]*100).toFixed(1), "max", maxKey, (data[maxKey]*100).toFixed(1));
              $(div_id).next().find('td#maxdate').text(maxKey);
              $(div_id).next().find('td#mindate').text(minKey);
-             $(div_id).next().find('td#min').text(data[minKey]);
-             $(div_id).next().find('td#max').text(data[maxKey]);
+             $(div_id).next().find('td#min').text((data[minKey]*100).toFixed(1) + " %");
+             $(div_id).next().find('td#max').text((data[maxKey]*100).toFixed(1) + " %");
              //$(div_id).next().text("helloworld");
          });
 

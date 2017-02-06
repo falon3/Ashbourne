@@ -35,7 +35,7 @@ def point_map_record(name, feat, point, activity, act_type):
         person = str(activity.person)
     point_record = {
         'name' : name,
-        'feature': feat, 
+        'feature': str(feat), 
         'time': str(time), 
         'locLat': str(point.y), 
         'locLon': str(point.x), 
@@ -60,8 +60,8 @@ def geofence_record(activity, fence, an_activity, time = '', person = ''):
     record  = {
         'name':str(location.name), 
         'id': str(location.id),
-        'feature': fence,
-        'time': time,
+        'feature': str(fence),
+        'time': str(time),
         'description': str(location.description),
         'act_type': 'geo_fence',
         'category': category.replace("'",""),
@@ -204,7 +204,7 @@ def map_view(request):
     context['time_from'] = 'all'
     context['time_to'] = 'now'
     context['query_result'] = processed   # for the table summary. all similar location activities grouped
-    
+    print len(context), len(journeys)
     return JsonResponse(
         {'html': template.render(context)}
     )
@@ -221,6 +221,20 @@ def get_all_friends(person):
         if not relation.person_2 == person:
             friends.append(relation.person_2)
     return friends
+
+# handles GET for /circles/
+def circles_view(request):
+    person_hash = request.GET.get('person_hash')
+    person = Person.objects.get(hash=person_hash)
+
+    template = loader.get_template('circlesView.html')  
+    context = {}
+    context['title'] = "Social Circles for " + person.name
+    context['person'] = person
+
+    return JsonResponse(
+        {'html': template.render(context, request)}
+    )
 
 #handles GET for /calendar/
 def calendar_view(request):
@@ -307,6 +321,8 @@ def move_cdata(request, person_hash):
     # we want total time NOT at home so will do total in a day - total for each
     for day in data.keys():
         data[day] = (datetime.timedelta(1) - data[day]).seconds
+        if data[day] == 0: # don't send data for nothing in a day
+            data.pop(day)
     return send_csv_data(data)
 
 # helper function to send csv data back from ajax request    

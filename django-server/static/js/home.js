@@ -46,6 +46,28 @@ $(document).ready(function () {
         });
     });
 
+    $(document).on('click', '.circles', function () {
+        //$(location).attr('href',"/calendar/");
+         $.ajax({
+            url: "/circles/",
+            traditional: true,
+            async: false,
+            type: "GET",
+            dataType: "json",
+            data: {
+                person_hash: $(this).data('id')
+            },
+            success: function (data) {
+                //console.log(data['html'])
+                $('.report-content').html(data['html']);
+                
+            },
+            failure: function (data) {
+                console.log('Got an error when requesting calendar');
+            }
+        });
+    });
+
 
     $(document).on('click', '#people', function () {
 

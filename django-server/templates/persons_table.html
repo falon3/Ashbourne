@@ -15,7 +15,8 @@
         <th>{{ Person.cell_number }}</th>
         <th class="relation-clicked" data-id="{{ Person.hash }}"><button class="btn btn-default " >Relations</button></th>
         <th>{% if Person.watch_id %}
-                <center><button class="btn btn-default map" data-id="{{ Person.hash }}" >Map</button> 
+                <center><button class="btn btn-default map" data-id="{{ Person.hash }}" >Map</button>
+                    <button class="btn btn-default circles" data-id="{{ Person.hash }}" >Social Circles</button>
                 {% if Person.home %}
                     <button class="btn btn-default calendar" data-id="{{ Person.hash }}">Calendar</button>
                 {% endif %}
