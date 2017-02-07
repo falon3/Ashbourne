@@ -97,7 +97,7 @@
         <tr>
             <th>Summary</th>
             <th>Date</th>
-            <th>movement amount</th>
+            <th>Percentage Spent out of House</th>
         </tr>
     </thead>
     <tbody>
@@ -119,7 +119,7 @@
         <tr>
             <th>Summary</th>
             <th>Date</th>
-            <th>social amount</th>
+            <th>Percentage Spent Socializing</th>
         </tr>
     </thead>
     <tbody>
@@ -234,10 +234,7 @@
                           .map(csv);
 
              rect.filter(function(d) {   return data.has(d); })
-                 .attr("class", function(d) { 
-                     console.log("data d: ", data.get(d), color(data.get(d)));
-                     return "day " + color(data.get(d)); 
-                 })
+                 .attr("class", function(d) { return "day " + color(data.get(d)); })
                  .select("title")
                  .text(function(d) { return d + ": " + percent(data.get(d)); });
 
@@ -264,19 +261,18 @@
                  var $tooltip = $("#tooltip");
                  $tooltip.empty();
              }
-             console.log("data", data, data['2017-02-02']);
-             maxKey = Object.keys(data).sort(function (a, b) {
-                 return data[a] < data[b];
+             var maxKey = Object.keys(data).sort(function (a, b) {
+                 return data[a] < data.get[b];
              })[0];
              var minKey = Object.keys(data).sort(function (a, b) {
-                 return data.get(a) > data.get(b);
+                 return data[a] > data[b];
              })[0];
-             console.log("min", minKey, (data[minKey]*100).toFixed(1), "max", maxKey, (data[maxKey]*100).toFixed(1));
+
              $(div_id).next().find('td#maxdate').text(maxKey.replace('$',''));
              $(div_id).next().find('td#mindate').text(minKey.replace('$',''));
              $(div_id).next().find('td#min').text((data[minKey]*100).toFixed(1) + " %");
              $(div_id).next().find('td#max').text((data[maxKey]*100).toFixed(1) + " %");
-             //$(div_id).next().text("helloworld");
+
          });
 
          function dayTitle (t0) {

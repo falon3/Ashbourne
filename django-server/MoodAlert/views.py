@@ -74,7 +74,6 @@ def map_view(request):
     person_hash = request.GET.get('person_hash')
     person = Person.objects.get(hash=person_hash)
     
-    
     wkt_w = WKTWriter()
 
     # get activity details from 'Location' activities for this person
@@ -204,7 +203,6 @@ def map_view(request):
     context['time_from'] = 'all'
     context['time_to'] = 'now'
     context['query_result'] = processed   # for the table summary. all similar location activities grouped
-    print len(context), len(journeys)
     return JsonResponse(
         {'html': template.render(context)}
     )

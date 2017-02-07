@@ -152,7 +152,7 @@
      OpenLayers.Projection.addTransform("EPSG:4326", "EPSG:3857", OpenLayers.Layer.SphericalMercator.projectForward);             
      var position       = new OpenLayers.LonLat(Edmonton_LonLat[0],Edmonton_LonLat[1]);
      var zoom           = 13;
-     
+          
      var currDateMin = $("#slider").dateRangeSlider("values").min;
      var currDateMax = $("#slider").dateRangeSlider("values").max;
 
@@ -327,28 +327,34 @@
      map = new OpenLayers.Map('map', options); 
 
      init(map);
+     refineTable($("#slider").dateRangeSlider("values").min, $("#slider").dateRangeSlider("values").max);
 
-     var path_layer = map.getLayersByName("Activities path")[0];
      // detect changes in daterange slider
      $("#slider").bind("valuesChanged", function(e, data){
+         var path_layer = map.getLayersByName("Activities path")[0];
          while( map.popups.length ) map.removePopup(map.popups[0]); // remove all popups
          selectFeature.unselectAll(); // unselect all features
          path_layer.removeAllFeatures(); //remove  all features and re-add them within the time limits   
          show_vectors(path_layer, points, data.values.min, data.values.max);
+         refineTable(data.values.min, data.values.max);
+     });
+     
 
-         // this is the date entry of each activity table row
+     // refine table to only have relevant entries by date
+     function refineTable(min, max){
          $("table#listevent tbody tr > th:first-child").each(function(index, time) {
              var compare_start = moment($(time).text(), "YYYY-MM-DD, hh:mm:ss A").toDate(); // format date
              var compare_end = moment($(time).next().text(), "YYYY-MM-DD, hh:mm:ss a").toDate(); // only care about date not time
              compare_end.setHours(0,0,0,0);
-             if (compare_start < data.values.min || compare_end > data.values.max){
+             if (compare_start < min || compare_end > max){
                  $(time).parent().hide();
              }
              else{
                  $(time).parent().show();
              }
          });
-     });
+     }
+     
 
          
 
