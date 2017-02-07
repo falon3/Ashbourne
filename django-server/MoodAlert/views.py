@@ -34,7 +34,7 @@ def point_map_record(name, feat, point, activity, act_type):
     else:
         person = str(activity.person)
     point_record = {
-        'name' : name,
+        'name' : str(name),
         'feature': str(feat), 
         'time': str(time), 
         'locLat': str(point.y), 
@@ -182,7 +182,7 @@ def map_view(request):
             journeys[-1].append(to_add)
 
     # get additional known locations details for this person or their friends' homes
-    all_friends = get_all_friends(person)
+    all_friends = get_all_relation_people(person)
     fences = list(Location.objects.filter(person__hash=person_hash))
     for friend in all_friends:
         if friend.home:
@@ -208,15 +208,27 @@ def map_view(request):
     )
 
 # returns list of all person friends
-def get_all_friends(person):
+def get_all_relation_people(person):
     friends = []
-    result1 = Relation.objects.filter(person_1=person).all()
-    result2 = Relation.objects.filter(person_2=person).all()
-    result = list(chain(result1, result2))
+    result = Relation.objects.filter(person_1=person).all() | Relation.objects.filter(person_2=person).all()
     for relation in result:
         if not relation.person_1 == person:
             friends.append(relation.person_1)
         if not relation.person_2 == person:
+            friends.append(relation.person_2)
+    print("relations", friends)
+    return friends
+
+# returns list of all person friends
+def get_friends_fam(person):
+    friends = []
+    result1 = Relation.objects.filter(person_1=person, relation_type__contains='Friends').all() | Relation.objects.filter(person_1=person, relation_type__contains='Family').all()
+    result2 = Relation.objects.filter(person_2=person, relation_type__contains='Friends').all() | Relation.objects.filter(person_2=person, relation_type__contains='Family').all()
+    result = list(chain(result1, result2))
+    for relation in result:
+        if (not relation.person_1 == person) and (relation.person_1 not in friends):
+            friends.append(relation.person_1)
+        if (not relation.person_2 == person) and (relation.person_2 not in friends):
             friends.append(relation.person_2)
     return friends
 
@@ -237,6 +249,16 @@ def circles_view(request):
 # handles ajax request for /calendar/person_hash/
 def get_social_circles(request, person_hash):
     pass
+    relations = {"Family": [], "Friends": [], "Health": [], "Negative": []}
+    person = Person.objects.get(hash=person_hash)
+    activities = list(Activity.objects.filter(person=person,category="Location", location__isnull=False).order_by('time'))
+    relations = Relation.objects.filter(person_1=person).all() | Relation.objects.filter(person_2=person).all()
+        
+    for rel in relations:
+        if not rel.person_1 == person:
+            for t in rel.relation_type:
+                pass
+                #relations[rel.person_1.name
     '''
     # REMEMBER ALLOWED TO HAVE DUPLICATE PEOPLE IN DIFFERENT CIRCLES
     person = Person.objects.get(hash=person_hash)
@@ -288,7 +310,10 @@ def calendar_view(request):
 def social_cdata(request, person_hash):
     person = Person.objects.get(hash=person_hash)
     activities = list(Activity.objects.filter(person=person,category="Location").order_by('time'))
-    friends = get_all_friends(person)
+    friends = get_friends_fam(person)
+
+    #for peop in known_people:
+    #    pass
     intervals = [] # make a list of all time intervals spent at home
     current = []
 
@@ -370,7 +395,7 @@ def send_csv_data(data):
         writer.writerow([entry, data[entry]])
     return response
     
-# helper function gets time stats puts them in given dict
+# helper function gets time stats puts them in given dict with dates as keys
 def calculate_timedata(data_dict, interval_list): 
     if not interval_list:
         return
@@ -538,8 +563,10 @@ def show_report_home(request):
     if request.method == "POST":
         person_hash = request.POST.get('person', '')
         result = Activity.objects.all()
+        
         context['selectperson'] = 'all'
         context['location'] = 'all'
+        
 
         if person_hash != "all":
             result = Activity.objects.filter(person__hash=person_hash).all().order_by('time')
@@ -561,9 +588,11 @@ def show_report_home(request):
         else:
             to_time = dateutil.parser.parse(request.POST.get('time-to', ''))
 
+        
         result = result.filter(time__gte=from_time, time__lte=to_time).all().order_by('time')
 
         context['query_result'] = result
+        return HttpResponse(template.render(context, request))
         context['time_from'] = from_time
         context['time_to'] = to_time
 

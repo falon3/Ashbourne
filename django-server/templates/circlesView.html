@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<script type="text/javascript" src="/static/js/jquery-ui.js"></script>
+<script type="text/javascript" src="/static/js/jQAllRangeSliders-min.js"></script>
+<link rel="stylesheet" href="/static/css/iThing.css" type="text/css" />
 <style>
 
  .node {
@@ -29,11 +32,38 @@
 
 </style>
 <h2 style="text-align:center;" >{{title}}</h2>
-</br></br>
+</br>
+<div id="slider"></div></br>
 <center><svg width="900" height="900"></svg></center>
 <script>
  $(document).ready(function (){
+     slider = $("#slider").dateRangeSlider({
+         bounds:{
+             min: new Date(2016, 12, 01, 0, 0, 0),
+             max: new Date(2018, 01, 01, 0, 0, 0)
+         },
+         defaultValues:{
+             min: new Date(2016, 12, 15, 0, 0, 0),
+             max: new Date(2017, 01, 01, 0, 0, 0)
+         },
+         step:{
+             days: 1
+         },
+         enabled: false
+     });
+
      socialCircles("/static/flare.json");
+
+     console.log(globalData);
+     savedata(globalData);
+     
+
+     $("#slider").bind("valuesChanged", function(e, data){       
+         console.log(data.values.min, data.values.max);
+         savedata(globalData);
+     });
+     //console.log(globalData);
+     
  });
 
  function socialCircles(jsondata){
@@ -51,9 +81,41 @@
                   .size([diameter - margin, diameter - margin])
                   .padding(2);
 
-     d3.json(jsondata, function(error, root) {
-         if (error) throw error;
+     savedata = function(root) {
+         globalData = root;
+         var minDate = $("#slider").dateRangeSlider("values").min;
+         var maxDate = $("#slider").dateRangeSlider("values").max;
 
+         // call function to format and sift data properly for date range and stuff
+         /* REMEMBER ALLOWED TO HAVE DUPLICATE PEOPLE IN DIFFERENT CIRCLES
+            person = Person.objects.get(hash=person_hash)
+            {
+            "name": person,
+            "children":[
+            {
+            "name": "family",
+            "children": [
+            {"name": "daughterJane", "size": 5000},
+            {},
+            {},
+            ]} 
+            {   "name": "friends",
+            "children": [
+            {},
+            ]}
+            {   "name": "health",
+            "children": [
+            {},
+            ]}
+            {   "name": "other",
+            "children": [
+            {},
+            ]}   
+            }] */
+
+
+
+         
          root = d3.hierarchy(root)
                   .sum(function(d) { return d.size; })
                   .sort(function(a, b) { return b.value - a.value; });
@@ -75,7 +137,12 @@
                      .attr("class", "label")
                      .style("fill-opacity", function(d) { return d.parent === root ? 1 : 0; })
                      .style("display", function(d) { return d.parent === root ? "inline" : "none"; })
-                     .text(function(d) { return d.data.name; });
+                     .text(function(d) { 
+                         // TODO print amount of time spent here under the name
+                         console.log("data", d);
+                         console.log(d.data);
+                         return d.data.name + " \n and other stuff"; });
+
 
          var node = g.selectAll("circle,text");
 
@@ -107,7 +174,10 @@
              node.attr("transform", function(d) { return "translate(" + (d.x - v[0]) * k + "," + (d.y - v[1]) * k + ")"; });
              circle.attr("r", function(d) { return d.r * k; });
          }
-     });
+
+         $("#slider").dateRangeSlider("enable");
+     }   
+     d3.json(jsondata, savedata);    
 }
 
 </script>

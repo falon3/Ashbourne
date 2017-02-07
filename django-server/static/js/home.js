@@ -63,14 +63,13 @@ $(document).ready(function () {
                 
             },
             failure: function (data) {
-                console.log('Got an error when requesting calendar');
+                console.log('Got an error when requesting circles');
             }
         });
     });
 
 
     $(document).on('click', '#people', function () {
-
         $.ajax({
             url: "/get_people_table/",
             traditional: true,
@@ -84,9 +83,10 @@ $(document).ready(function () {
                 //console.log(data['html'])
                 $('.report-content').html(data['html']);
                 $('.report-content').show();
+
             },
             failure: function (data) {
-                console.log('Got an error when requesting show_activity_table');
+                console.log('Got an error when requesting show_people_table');
             }
         });
     });
@@ -104,7 +104,7 @@ $(document).ready(function () {
                 $('.relation-table').html(data['html']);
             },
             failure: function (data) {
-                console.log('Got an error when requesting show_activity_table');
+                console.log('Got an error when requesting relations');
             }
         });
     });

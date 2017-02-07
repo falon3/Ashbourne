@@ -71,7 +71,7 @@ class Relation(models.Model):
     FAMILY = 'Family'
     FRIENDS = 'Friends'
     HEALTH = 'Health'
-    NEGATIVE = 'Negative relationship or enemy'
+    NEGATIVE = 'Negative'
     REL_TYPES = (
         (FAMILY, 'Family'),
         (FRIENDS, 'Friends'),
