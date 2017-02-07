@@ -26,7 +26,7 @@
         <th>{{ activity.time }}</th>
         {% if activity.person != selectperson %} <td>{{ activity.person }}</td> {% endif %}
         <td>{{ activity.location }}</td>
-        <th>{{ activity.activity_type }}</th>
+        <th>{% for cat in activity.location.category %} {{cat}}</br> {% endfor %}</th>
         <th>{{ activity.location.description }}</th>
     </tr>
     {% endfor %}

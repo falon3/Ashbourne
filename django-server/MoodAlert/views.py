@@ -234,6 +234,42 @@ def circles_view(request):
         {'html': template.render(context, request)}
     )
 
+# handles ajax request for /calendar/person_hash/
+def get_social_circles(request, person_hash):
+    pass
+    '''
+    # REMEMBER ALLOWED TO HAVE DUPLICATE PEOPLE IN DIFFERENT CIRCLES
+    person = Person.objects.get(hash=person_hash)
+    {
+    "name": person,
+    "children":[
+    {
+        "name": "family",
+        "children": [
+            {"name": "daughterJane", "size": 5000},
+            {},
+            {},
+            ]} 
+    {   "name": "friends",
+        "children": [
+           {},
+           ]}
+    {   "name": "health",
+        "children": [
+          {},
+          ]}
+    {   "name": "other",
+        "children": [
+         {},
+         ]}   
+    }]
+    
+
+
+
+
+    '''
+
 #handles GET for /calendar/
 def calendar_view(request):
     person_hash = request.GET.get('person_hash')
