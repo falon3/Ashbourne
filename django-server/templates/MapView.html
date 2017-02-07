@@ -299,8 +299,11 @@
      $("p#header").hide();     
 
      $("table#listevent tbody tr > th:first-child").each(function(index, time) {
-         var format = new Date( $(time).text()).toLocaleString();
+         var format = moment($(time).text(), "YYYY-MM-DD, hh:mm:ss").format('LLL');
+         var format_end = moment($(time).next().text(), "YYYY-MM-DD, hh:mm:ss").format('LLL');
          $(time).text(format);
+         $(time).next().text(format_end);
+         
 
      });
 
@@ -343,9 +346,9 @@
      // refine table to only have relevant entries by date
      function refineTable(min, max){
          $("table#listevent tbody tr > th:first-child").each(function(index, time) {
-             var compare_start = moment($(time).text(), "YYYY-MM-DD, hh:mm:ss A").toDate(); // format date
-             var compare_end = moment($(time).next().text(), "YYYY-MM-DD, hh:mm:ss a").toDate(); // only care about date not time
-             compare_end.setHours(0,0,0,0);
+             console.log($(time).next().text());
+             var compare_start = $(time).text(); // format date
+             var compare_end = moment($(time).next().text(), 'MMMMDD, Y hh:mm a').startOf('day').toDate(); // only care about date not time
              if (compare_start < min || compare_end > max){
                  $(time).parent().hide();
              }
