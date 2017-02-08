@@ -33,8 +33,7 @@
                             
                 if (place.time != null) {
                     var time = place.time; 
-                    time_compare = new Date(time);
-                    time_compare.setHours(0,0,0,0);
+                    time_compare = moment(time, 'YYYY-MM-DD, hh:mm:ss ').startOf('day').toDate();
                     // skip all activities not within the date range
                     if (time_compare < datemin  || time_compare > datemax){
                         return
@@ -303,7 +302,9 @@
 
      $("table#listevent tbody tr > th:first-child").each(function(index, time) {
          var format = moment($(time).text(), "YYYY-MM-DD, hh:mm:ss").format('LLL');
+         var format_end = moment($(time).next().text(), "YYYY-MM-DD, hh:mm:ss").format('LLL');
          $(time).text(format);
+         $(time).next().text(format_end);
          
      });
 
@@ -349,6 +350,7 @@
          $("table#listevent tbody tr > th:first-child").each(function(index, time) {
              var compare_start = $(time).text(); // format date
              var compare_end = moment($(time).next().text(), 'MMMMDD, Y hh:mm a').startOf('day').toDate(); // only care about date not time
+             
              if (compare_start < min || compare_end > max){
                  $(time).parent().hide();
              }

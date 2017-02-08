@@ -26,6 +26,7 @@ urlpatterns = [
     url(r'^movecdata/(?P<person_hash>[a-z0-9]{10})', views.move_cdata),
     url(r'^socialcdata/(?P<person_hash>[a-z0-9]{10})', views.social_cdata),
     url(r'^circles/', views.circles_view),
+    url(r'^circledata/(?P<person_hash>[a-z0-9]{10})', views.get_social_circles),
     url(r'^map/', views.map_view),
     url(r'^add_record/', views.add_record_view, name='FirstMap-index'),
     url(r'^get_info/', views.test_get_info),

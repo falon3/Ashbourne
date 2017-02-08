@@ -77,7 +77,7 @@ def map_view(request):
     wkt_w = WKTWriter()
 
     # get activity details from 'Location' activities for this person
-    loc_activities = Activity.objects.filter(person=person,category="Location").order_by('time')
+    loc_activities = Activity.objects.filter(person__hash=person_hash,category="Location").order_by('time')
     j = 0    
 
     # for the table summary. Group all similar location activities in order
@@ -210,13 +210,12 @@ def map_view(request):
 # returns list of all person friends
 def get_all_relation_people(person):
     friends = []
-    result = Relation.objects.filter(person_1=person).all() | Relation.objects.filter(person_2=person).all()
+    result = Relation.objects.filter(person_1=person) | Relation.objects.filter(person_2=person)
     for relation in result:
         if not relation.person_1 == person:
             friends.append(relation.person_1)
         if not relation.person_2 == person:
             friends.append(relation.person_2)
-    print("relations", friends)
     return friends
 
 # returns list of all person friends
@@ -226,7 +225,7 @@ def get_friends_fam(person):
     result2 = Relation.objects.filter(person_2=person, relation_type__contains='Friends').all() | Relation.objects.filter(person_2=person, relation_type__contains='Family').all()
     result = list(chain(result1, result2))
     for relation in result:
-        if (not relation.person_1 == person) and (relation.person_1 not in friends):
+        if (not relation.person_1 == person):
             friends.append(relation.person_1)
         if (not relation.person_2 == person) and (relation.person_2 not in friends):
             friends.append(relation.person_2)
@@ -242,13 +241,14 @@ def circles_view(request):
     context['title'] = "Social Circles for " + person.name
     context['person'] = person
 
-    get_social_circles(request, person_hash)
+    #get_social_circles(request, person_hash)
     return JsonResponse(
         {'html': template.render(context, request)}
     )
 
-# handles ajax request for /calendar/person_hash/
+# handles ajax request for /circles/person_hash/
 def get_social_circles(request, person_hash):
+    print("CALLED RIGHT FUNCTION")
     rel_dict = collections.defaultdict(list)
     rel_dict["Family"] = []
     rel_dict["Friends"] = []
@@ -257,29 +257,19 @@ def get_social_circles(request, person_hash):
     person = Person.objects.get(hash=person_hash)
     activities = list(Activity.objects.filter(person=person,category="Location").order_by('time'))
     relations = Relation.objects.filter(person_1=person).all() | Relation.objects.filter(person_2=person).all()
-    peeps_list = []
 
-    for rel in relations:
-        if not rel.person_1 == person:
-            add = rel.person_1
-        else:
-            add = rel.person_2
-        if add not in peeps_list:
-            peeps_list.append(add)
-        for t in rel.relation_type:
-            if str(add.name) not in rel_dict[str(t)]:
-                rel_dict[str(t)].append(str(add.name))
+    l1 = [rel.person_1 for rel in relations if not rel.person_1 == person]
+    l2 = [rel.person_2 for rel in relations if not rel.person_2 == person and rel.person_2 not in l1]
+    peeps_list = list(chain(l1,l2))                 
     
     intervals = collections.defaultdict(list) # make a list of all time interval lists spent with each person(person is key)
     for peep in peeps_list:
         intervals[str(peep.name)] = []
-    print peeps_list
+    
     current = []
     curr_peep = None
     for act in activities:
         if act.location:  
-            print(act.location, act.location.person)
-            #print "\n"
             if act.location.person in peeps_list:
                 if len(current)==0 or (len(current)==1 and act == activities[-1]): # also add last one
                     current.append(act.time) #interval entered social location
@@ -301,19 +291,27 @@ def get_social_circles(request, person_hash):
     if len(current)>1: # if missed one end point
         intervals[str(curr_peep.name)].append(current)
     
-    print intervals
-    print "\n\n\n"
-    to_send = {} # dict of dicts person with a dict of time for each day    
-    for thing in intervals.keys(): #each list for each person
+    person_times = {} # dict of dicts person with a dict of time for each day    
+    for person_name in intervals.keys(): #each list for each person
         each_data = {} # keys are the people names, with list of dates values will be total time for that day 
-        calculate_timedata(each_data, intervals[thing])
+        calculate_timedata(each_data, intervals[person_name])
         # we want total time socializing each day in seconds
-        for day in each_data.keys():
-            each_data[day] = each_data[day].seconds
-        to_send[thing] = each_data
-        print thing, to_send[thing]
+        data_json = { str(key):value for key,value in each_data.items() } # all keys need to be strings for the json
+        for day in data_json.keys():
+            data_json[day] = data_json[day].seconds
+        person_times[person_name] = data_json
+        
+    for rel in relations:
+        if not rel.person_1 == person:
+            add = rel.person_1
+        else:
+            add = rel.person_2
+        for t in rel.relation_type:
+            if {str(add.name): person_times[str(add.name)]} not in rel_dict[str(t)]:
+                rel_dict[str(t)].append({str(add.name): person_times[str(add.name)]})
 
-
+    print rel_dict
+    return HttpResponse(json.dumps(rel_dict), content_type = "application/json")
     # TODO send this back to template in response. then parse on other side
     '''
     # REMEMBER ALLOWED TO HAVE DUPLICATE PEOPLE IN DIFFERENT CIRCLES
@@ -376,7 +374,7 @@ def social_cdata(request, person_hash):
     for act in activities:
         if act.location:
             categories = [str(cat) for cat in act.location.category]
-            if "Social" in categories or ("Home" in categories and act.location.person in friends):
+            if "Social" in categories or act.location.person in friends:
                 if len(current)==0 or (len(current)==1 and act == activities[-1]): # also add last one
                     current.append(act.time) #interval entered social location
                 else:
@@ -648,7 +646,6 @@ def show_report_home(request):
         result = result.filter(time__gte=from_time, time__lte=to_time).all().order_by('time')
 
         context['query_result'] = result
-        return HttpResponse(template.render(context, request))
         context['time_from'] = from_time
         context['time_to'] = to_time
 

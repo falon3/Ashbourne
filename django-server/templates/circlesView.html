@@ -52,10 +52,11 @@
          enabled: false
      });
 
-     socialCircles("/static/flare.json");
-
-     console.log(globalData);
-     savedata(globalData);
+     person = "{{person.name}}"
+     //socialCircles("/static/flare.json"); //test data
+     socialCircles("/circledata/{{person.hash}}");
+     //console.log(globalData);
+     //savedata(globalData);
      
 
      $("#slider").bind("valuesChanged", function(e, data){       
@@ -66,7 +67,59 @@
      
  });
 
- function socialCircles(jsondata){
+ function sort_through_data(root, minDate, maxDate){
+     temp = { "name": person,
+              "children": [{
+                  "name": "Family",
+                  "children": []
+                  }, {
+                  "name": "Friends",
+                  "children": []
+                  }, {
+                  "name": "Health",
+                  "children:": [],
+                  }, {
+                  "name": "Negative",
+                  "children": []
+                  }
+                  ]
+     };
+     
+     $.each(root, function(key, p_list){
+         console.log("Key", key, "p", p_list);
+         
+     });
+     
+                      
+
+ };
+ /* REMEMBER ALLOWED TO HAVE DUPLICATE PEOPLE IN DIFFERENT CIRCLES
+    person = Person.objects.get(hash=person_hash)
+    {
+    "name": person,
+    "children":[
+    {
+    "name": "family",
+    "children": [
+    {"name": "daughterJane", "size": 5000},
+    {},
+    {},
+    ]} 
+    {   "name": "friends",
+    "children": [
+    {},
+    ]}
+    {   "name": "health",
+    "children": [
+    {},
+    ]}
+    {   "name": "other",
+    "children": [
+    {},
+    ]}   
+    }] */
+
+ function socialCircles(datapath){
      var svg = d3.select("svg"),
          margin = 20,
          diameter = +svg.attr("width"),
@@ -83,38 +136,12 @@
 
      savedata = function(root) {
          globalData = root;
+         console.log("root", root);
          var minDate = $("#slider").dateRangeSlider("values").min;
          var maxDate = $("#slider").dateRangeSlider("values").max;
 
+         sort_through_data(root, minDate, maxDate);
          // call function to format and sift data properly for date range and stuff
-         /* REMEMBER ALLOWED TO HAVE DUPLICATE PEOPLE IN DIFFERENT CIRCLES
-            person = Person.objects.get(hash=person_hash)
-            {
-            "name": person,
-            "children":[
-            {
-            "name": "family",
-            "children": [
-            {"name": "daughterJane", "size": 5000},
-            {},
-            {},
-            ]} 
-            {   "name": "friends",
-            "children": [
-            {},
-            ]}
-            {   "name": "health",
-            "children": [
-            {},
-            ]}
-            {   "name": "other",
-            "children": [
-            {},
-            ]}   
-            }] */
-
-
-
          
          root = d3.hierarchy(root)
                   .sum(function(d) { return d.size; })
@@ -177,7 +204,7 @@
 
          $("#slider").dateRangeSlider("enable");
      }   
-     d3.json(jsondata, savedata);    
+     d3.json(datapath, savedata);    
 }
 
 </script>
