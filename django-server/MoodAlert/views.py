@@ -200,8 +200,8 @@ def map_view(request):
     context['point_collection'] = journeys
     context['selectperson'] = person
     context['location'] = 'all'
-    context['time_from'] = 'all'
-    context['time_to'] = 'now'
+    context['time_from'] = ''
+    context['time_to'] = ''
     context['query_result'] = processed   # for the table summary. all similar location activities grouped
     return JsonResponse(
         {'html': template.render(context)}
@@ -273,10 +273,13 @@ def get_social_circles(request, person_hash):
     intervals = collections.defaultdict(list) # make a list of all time interval lists spent with each person(person is key)
     for peep in peeps_list:
         intervals[str(peep.name)] = []
+    print peeps_list
     current = []
     curr_peep = None
     for act in activities:
         if act.location:  
+            print(act.location, act.location.person)
+            #print "\n"
             if act.location.person in peeps_list:
                 if len(current)==0 or (len(current)==1 and act == activities[-1]): # also add last one
                     current.append(act.time) #interval entered social location
@@ -297,7 +300,9 @@ def get_social_circles(request, person_hash):
 
     if len(current)>1: # if missed one end point
         intervals[str(curr_peep.name)].append(current)
-        
+    
+    print intervals
+    print "\n\n\n"
     to_send = {} # dict of dicts person with a dict of time for each day    
     for thing in intervals.keys(): #each list for each person
         each_data = {} # keys are the people names, with list of dates values will be total time for that day 
@@ -306,6 +311,8 @@ def get_social_circles(request, person_hash):
         for day in each_data.keys():
             each_data[day] = each_data[day].seconds
         to_send[thing] = each_data
+        print thing, to_send[thing]
+
 
     # TODO send this back to template in response. then parse on other side
     '''

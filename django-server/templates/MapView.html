@@ -69,11 +69,14 @@
                         }
                         layer.drawFeature(place_update[0]);
                     
-                    // update table
-                    var curr_entry = $("table#listevent tbody tr > th:first-child").filter(function () {
-                        return ($(this).text() == time_spent.enter.toLocaleString());
-                    });
-                    curr_entry.next().text(time_spent.exit.toLocaleString());
+                        // update table
+                        var curr_entry = $("table#listevent tbody tr > th:first-child").filter(function () {
+                            console.log("enter", moment(time_spent.enter, "YYYY-MM-DD, hh:mm:ss").format('LLL'));
+                            return ($(this).text() == moment(time_spent.enter, "YYYY-MM-DD, hh:mm:ss").format('LLL'));
+                        });
+                        
+                        console.log("update", curr_entry.text(), curr_entry.next().text(), time_spent.exit.toLocaleString());
+                        curr_entry.next().text(moment(time_spent.exit, "YYYY-MM-DD, hh:mm:ss").format('LLL'));
                     }
                     
                 }
@@ -300,11 +303,8 @@
 
      $("table#listevent tbody tr > th:first-child").each(function(index, time) {
          var format = moment($(time).text(), "YYYY-MM-DD, hh:mm:ss").format('LLL');
-         var format_end = moment($(time).next().text(), "YYYY-MM-DD, hh:mm:ss").format('LLL');
          $(time).text(format);
-         $(time).next().text(format_end);
          
-
      });
 
      slider = $("#slider").dateRangeSlider({
@@ -347,7 +347,6 @@
      // refine table to only have relevant entries by date
      function refineTable(min, max){
          $("table#listevent tbody tr > th:first-child").each(function(index, time) {
-             console.log($(time).next().text());
              var compare_start = $(time).text(); // format date
              var compare_end = moment($(time).next().text(), 'MMMMDD, Y hh:mm a').startOf('day').toDate(); // only care about date not time
              if (compare_start < min || compare_end > max){

@@ -8,8 +8,12 @@
 <table class="table" id="listevent">
     <thead class="thead-inverse">
         <tr>
+            {% if time_from == "" %}
             <th>Time from</th>
             <th>Time until</th>
+            {% else %}
+            <th>Time</th>
+            {% endif %}
             {% if selectperson ==  "all" %} 
             <th>Person</th> 
             {% endif %}
@@ -22,11 +26,19 @@
 
     {% for activity in query_result %}
     
-        <th>{{ activity.time }}</th>
-        <th>{{ activity.time }}</th>
-        {% if activity.person != selectperson %} <th>{{ activity.person }}</th> {% endif %}
+        {% if time_from == "" %}
+            <th>{{ activity.time }}</th>
+        {% endif %}
+        <th>{{ activity.time }}</th>    
+        {% if activity.person != selectperson %} 
+            <th>{{ activity.person }}</th> 
+        {% endif %}
         <th>{{ activity.location }}</th>
-        <th>{% for cat in activity.location.category %} {{cat}}</br> {% endfor %}</th>
+        {% if activity.location == None %}
+            <th>In transit</th>
+        {% else %}
+            <th>{% for cat in activity.location.category %} {{cat}}</br> {% endfor %}</th>
+        {% endif %}
         <th>{{ activity.location.description }}</th>
     </tr>
     {% endfor %}
