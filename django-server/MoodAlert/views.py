@@ -242,23 +242,72 @@ def circles_view(request):
     context['title'] = "Social Circles for " + person.name
     context['person'] = person
 
+    get_social_circles(request, person_hash)
     return JsonResponse(
         {'html': template.render(context, request)}
     )
 
 # handles ajax request for /calendar/person_hash/
 def get_social_circles(request, person_hash):
-    pass
-    relations = {"Family": [], "Friends": [], "Health": [], "Negative": []}
+    rel_dict = collections.defaultdict(list)
+    rel_dict["Family"] = []
+    rel_dict["Friends"] = []
+    rel_dict["Health"] = []
+    rel_dict["Negative"] = []
     person = Person.objects.get(hash=person_hash)
-    activities = list(Activity.objects.filter(person=person,category="Location", location__isnull=False).order_by('time'))
+    activities = list(Activity.objects.filter(person=person,category="Location").order_by('time'))
     relations = Relation.objects.filter(person_1=person).all() | Relation.objects.filter(person_2=person).all()
-        
+    peeps_list = []
+
     for rel in relations:
         if not rel.person_1 == person:
-            for t in rel.relation_type:
-                pass
-                #relations[rel.person_1.name
+            add = rel.person_1
+        else:
+            add = rel.person_2
+        if add not in peeps_list:
+            peeps_list.append(add)
+        for t in rel.relation_type:
+            if str(add.name) not in rel_dict[str(t)]:
+                rel_dict[str(t)].append(str(add.name))
+    
+    intervals = collections.defaultdict(list) # make a list of all time interval lists spent with each person(person is key)
+    for peep in peeps_list:
+        intervals[str(peep.name)] = []
+    current = []
+    curr_peep = None
+    for act in activities:
+        if act.location:  
+            if act.location.person in peeps_list:
+                if len(current)==0 or (len(current)==1 and act == activities[-1]): # also add last one
+                    current.append(act.time) #interval entered social location
+                    curr_peep = act.location.person
+                else:
+                    continue # still socializing
+                
+            else:
+                if len(current) > 0:
+                    current.append(act.time) # count time left social place as time entered this new non social place
+                    intervals[str(curr_peep.name)].append(current)
+                    current = []
+        else:
+            if len(current) > 0:
+                current.append(act.time) # time left last person's place
+                intervals[str(curr_peep.name)].append(current)
+                current = []
+
+    if len(current)>1: # if missed one end point
+        intervals[str(curr_peep.name)].append(current)
+        
+    to_send = {} # dict of dicts person with a dict of time for each day    
+    for thing in intervals.keys(): #each list for each person
+        each_data = {} # keys are the people names, with list of dates values will be total time for that day 
+        calculate_timedata(each_data, intervals[thing])
+        # we want total time socializing each day in seconds
+        for day in each_data.keys():
+            each_data[day] = each_data[day].seconds
+        to_send[thing] = each_data
+
+    # TODO send this back to template in response. then parse on other side
     '''
     # REMEMBER ALLOWED TO HAVE DUPLICATE PEOPLE IN DIFFERENT CIRCLES
     person = Person.objects.get(hash=person_hash)
