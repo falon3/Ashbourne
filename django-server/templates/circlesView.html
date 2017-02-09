@@ -2,6 +2,7 @@
 <meta charset="utf-8">
 <script type="text/javascript" src="/static/js/jquery-ui.js"></script>
 <script type="text/javascript" src="/static/js/jQAllRangeSliders-min.js"></script>
+<script type="text/javascript" src="/static/js/moment.min.js"></script>
 <link rel="stylesheet" href="/static/css/iThing.css" type="text/css" />
 <style>
 
@@ -53,22 +54,38 @@
      });
 
      person = "{{person.name}}"
-     //socialCircles("/static/flare.json"); //test data
      socialCircles("/circledata/{{person.hash}}");
-     //console.log(globalData);
-     //savedata(globalData);
      
-
      $("#slider").bind("valuesChanged", function(e, data){       
          console.log(data.values.min, data.values.max);
-         savedata(globalData);
+         d3.select("svg").remove();
+
+         //redo setup TODO this still isn't working!!
+         svg = d3.select("svg"),
+             margin = 20,
+             diameter = +svg.attr("width"),
+             g = svg.append("g").attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
+
+         color = d3.scaleLinear()
+                       .domain([-1, 5])
+                       .range(["hsl(152,80%,80%)", "hsl(228,30%,40%)"])
+                       .interpolate(d3.interpolateHcl);
+
+         pack = d3.pack()
+                      .size([diameter - margin, diameter - margin])
+                      .padding(2);
+
+         savedata(globalData);        
      });
-     //console.log(globalData);
+
      
  });
 
  function sort_through_data(root, minDate, maxDate){
-     temp = { "name": person,
+     minDate = moment(minDate).format("YYYY-MM-DD");
+     maxDate = moment(maxDate).format("YYYY-MM-DD");
+     
+     var temp = { "name": person,
               "children": [{
                   "name": "Family",
                   "children": []
@@ -77,47 +94,47 @@
                   "children": []
                   }, {
                   "name": "Health",
-                  "children:": [],
+                  "children": [],
                   }, {
                   "name": "Negative",
                   "children": []
                   }
                   ]
      };
-     
-     $.each(root, function(key, p_list){
-         console.log("Key", key, "p", p_list);
-         
+     $.each(root, function(key, p_list){ 
+         p_list.forEach(function(pdict, i) {          
+             $.each(pdict, function(pname, entries){
+                 var total_time = 0;
+                 $.each(entries, function(day, time){
+                     if (day > minDate && day <= maxDate){
+                         total_time += time;
+                     }    
+                 });
+                 total_time = formatTime(parseInt(total_time));
+                 size = 300;
+                 if (total_time==''){
+                     size = 50;
+                     name = pname + ": NO time spent with ";
+                 }
+                 else { name = pname + " " + total_time;
+                 }
+                 var up_index = temp["children"].findIndex((obj => obj.name == key));
+                 temp["children"][up_index]["children"].push({"name":name, "size":size});  
+             });
+         });
      });
-     
-                      
-
+     return temp;                          
  };
- /* REMEMBER ALLOWED TO HAVE DUPLICATE PEOPLE IN DIFFERENT CIRCLES
-    person = Person.objects.get(hash=person_hash)
-    {
-    "name": person,
-    "children":[
-    {
-    "name": "family",
-    "children": [
-    {"name": "daughterJane", "size": 5000},
-    {},
-    {},
-    ]} 
-    {   "name": "friends",
-    "children": [
-    {},
-    ]}
-    {   "name": "health",
-    "children": [
-    {},
-    ]}
-    {   "name": "other",
-    "children": [
-    {},
-    ]}   
-    }] */
+
+ function formatTime(seconds) {
+     if (seconds==0) return '';
+     var minutes = Math.floor((seconds%3600)/60);
+     var hours = Math.floor(seconds/3600);
+     if (minutes == NaN) return "unknown"
+     var time_string = hours + " hours, " + minutes + " minutes";
+     return time_string.toString();
+ }
+
 
  function socialCircles(datapath){
      var svg = d3.select("svg"),
@@ -134,15 +151,15 @@
                   .size([diameter - margin, diameter - margin])
                   .padding(2);
 
-     savedata = function(root) {
-         globalData = root;
-         console.log("root", root);
+     savedata = function(gdata) {
+         globalData = gdata;
+         console.log("root", gdata);
          var minDate = $("#slider").dateRangeSlider("values").min;
          var maxDate = $("#slider").dateRangeSlider("values").max;
 
-         sort_through_data(root, minDate, maxDate);
+         var root = sort_through_data(gdata, minDate, maxDate);
          // call function to format and sift data properly for date range and stuff
-         
+         console.log("NEW ROOT", root);
          root = d3.hierarchy(root)
                   .sum(function(d) { return d.size; })
                   .sort(function(a, b) { return b.value - a.value; });
@@ -166,9 +183,9 @@
                      .style("display", function(d) { return d.parent === root ? "inline" : "none"; })
                      .text(function(d) { 
                          // TODO print amount of time spent here under the name
-                         console.log("data", d);
-                         console.log(d.data);
-                         return d.data.name + " \n and other stuff"; });
+                         //console.log("data", d);
+                         //console.log(d.data);
+                         return d.data.name; });
 
 
          var node = g.selectAll("circle,text");
