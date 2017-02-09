@@ -248,15 +248,14 @@ def circles_view(request):
 
 # handles ajax request for /circles/person_hash/
 def get_social_circles(request, person_hash):
-    print("CALLED RIGHT FUNCTION")
     rel_dict = collections.defaultdict(list)
     rel_dict["Family"] = []
     rel_dict["Friends"] = []
     rel_dict["Health"] = []
     rel_dict["Negative"] = []
     person = Person.objects.get(hash=person_hash)
-    activities = list(Activity.objects.filter(person=person,category="Location").order_by('time'))
-    relations = Relation.objects.filter(person_1=person).all() | Relation.objects.filter(person_2=person).all()
+    activities = list(Activity.objects.filter(person__hash=person_hash,category="Location").order_by('time'))
+    relations = Relation.objects.filter(person_1__hash=person_hash).all() | Relation.objects.filter(person_2__hash=person_hash).all()
 
     l1 = [rel.person_1 for rel in relations if not rel.person_1 == person]
     l2 = [rel.person_2 for rel in relations if not rel.person_2 == person and rel.person_2 not in l1]
@@ -310,41 +309,7 @@ def get_social_circles(request, person_hash):
             if {str(add.name): person_times[str(add.name)]} not in rel_dict[str(t)]:
                 rel_dict[str(t)].append({str(add.name): person_times[str(add.name)]})
 
-    print rel_dict
     return HttpResponse(json.dumps(rel_dict), content_type = "application/json")
-    # TODO send this back to template in response. then parse on other side
-    '''
-    # REMEMBER ALLOWED TO HAVE DUPLICATE PEOPLE IN DIFFERENT CIRCLES
-    person = Person.objects.get(hash=person_hash)
-    {
-    "name": person,
-    "children":[
-    {
-        "name": "family",
-        "children": [
-            {"name": "daughterJane", "size": 5000},
-            {},
-            {},
-            ]} 
-    {   "name": "friends",
-        "children": [
-           {},
-           ]}
-    {   "name": "health",
-        "children": [
-          {},
-          ]}
-    {   "name": "other",
-        "children": [
-         {},
-         ]}   
-    }]
-    
-
-
-
-
-    '''
 
 #handles GET for /calendar/
 def calendar_view(request):
@@ -434,8 +399,8 @@ def move_cdata(request, person_hash):
     # we want total time NOT at home so will do total in a day - total for each
     for day in data.keys():
         data[day] = (datetime.timedelta(1) - data[day]).seconds
-        if data[day] == 0: # don't send data for nothing in a day
-            data.pop(day)
+        #if data[day] == 0: # don't send data for nothing in a day
+        #    data.pop(day)
     return send_csv_data(data)
 
 # helper function to send csv data back from ajax request    

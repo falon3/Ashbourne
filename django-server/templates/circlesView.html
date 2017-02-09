@@ -16,11 +16,11 @@
  }
 
  .node--leaf {
-     fill: white;
+     fill: #E6E6FA;
  }
 
  .label {
-     font: 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
+     font: 20px "Helvetica Neue", Helvetica, Arial, sans-serif;
      text-anchor: middle;
      text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
  }
@@ -57,24 +57,8 @@
      socialCircles("/circledata/{{person.hash}}");
      
      $("#slider").bind("valuesChanged", function(e, data){       
-         console.log(data.values.min, data.values.max);
-         d3.select("svg").remove();
-
-         //redo setup TODO this still isn't working!!
-         svg = d3.select("svg"),
-             margin = 20,
-             diameter = +svg.attr("width"),
-             g = svg.append("g").attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
-
-         color = d3.scaleLinear()
-                       .domain([-1, 5])
-                       .range(["hsl(152,80%,80%)", "hsl(228,30%,40%)"])
-                       .interpolate(d3.interpolateHcl);
-
-         pack = d3.pack()
-                      .size([diameter - margin, diameter - margin])
-                      .padding(2);
-
+         svg.selectAll("*").remove(); // remove and redraw circles
+         g = svg.append("g").attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
          savedata(globalData);        
      });
 
@@ -82,9 +66,11 @@
  });
 
  function sort_through_data(root, minDate, maxDate){
-     minDate = moment(minDate).format("YYYY-MM-DD");
-     maxDate = moment(maxDate).format("YYYY-MM-DD");
-     
+     var minDate = moment(minDate).format("YYYY-MM-DD");
+     var maxDate = moment(maxDate).format("YYYY-MM-DD");
+
+     var minTime;
+     var maxTime;
      var temp = { "name": person,
               "children": [{
                   "name": "Family",
@@ -102,7 +88,7 @@
                   ]
      };
      $.each(root, function(key, p_list){ 
-         p_list.forEach(function(pdict, i) {          
+         p_list.forEach(function(pdict, i) {         
              $.each(pdict, function(pname, entries){
                  var total_time = 0;
                  $.each(entries, function(day, time){
@@ -110,17 +96,32 @@
                          total_time += time;
                      }    
                  });
-                 total_time = formatTime(parseInt(total_time));
-                 size = 300;
-                 if (total_time==''){
-                     size = 50;
-                     name = pname + ": NO time spent with ";
+                 if (!minTime && !maxTime){ 
+                     minTime = total_time; 
+                     maxTime = total_time;
                  }
-                 else { name = pname + " " + total_time;
-                 }
+                 if (total_time < minTime) { minTime = total_time; }
+                 if (total_time > maxTime) { maxTime = total_time; }
+
+                 form_time = formatTime(parseInt(total_time));
+                 var size = parseInt(total_time);
+                 if (form_time==''){ name = pname + ": NO time spent with "; }
+                 else { name = pname + ": " + form_time; }
+
                  var up_index = temp["children"].findIndex((obj => obj.name == key));
                  temp["children"][up_index]["children"].push({"name":name, "size":size});  
              });
+             
+         });
+     });
+     var linearScale = d3.scaleLinear()
+                         .domain([minTime, maxTime])
+                         .range([5,150]);
+
+     temp["children"].forEach(function(category, i){      
+         category["children"].forEach(function(person, j){
+             var size_scaled = Math.floor(linearScale(person["size"]));
+             person["size"] = size_scaled;
          });
      });
      return temp;                          
@@ -135,31 +136,28 @@
      return time_string.toString();
  }
 
-
  function socialCircles(datapath){
-     var svg = d3.select("svg"),
-         margin = 20,
-         diameter = +svg.attr("width"),
-         g = svg.append("g").attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
+     svg = d3.select("svg");
+     margin = 20;
+     diameter = +svg.attr("width");
+     g = svg.append("g").attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
 
-     var color = d3.scaleLinear()
-                   .domain([-1, 5])
-                   .range(["hsl(152,80%,80%)", "hsl(228,30%,40%)"])
+     color = d3.scaleLinear()
+                   .domain([-1, 8])
+               .range(["hsl(152,80%,80%)", "hsl(228,30%,40%)"])
                    .interpolate(d3.interpolateHcl);
 
-     var pack = d3.pack()
+     pack = d3.pack()
                   .size([diameter - margin, diameter - margin])
                   .padding(2);
 
      savedata = function(gdata) {
-         globalData = gdata;
-         console.log("root", gdata);
+         globalData = gdata; // remember original data
          var minDate = $("#slider").dateRangeSlider("values").min;
          var maxDate = $("#slider").dateRangeSlider("values").max;
 
          var root = sort_through_data(gdata, minDate, maxDate);
          // call function to format and sift data properly for date range and stuff
-         console.log("NEW ROOT", root);
          root = d3.hierarchy(root)
                   .sum(function(d) { return d.size; })
                   .sort(function(a, b) { return b.value - a.value; });
@@ -172,7 +170,9 @@
                        .data(nodes)
                        .enter().append("circle")
                        .attr("class", function(d) { return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root"; })
-                       .style("fill", function(d) { return d.children ? color(d.depth) : null; })
+                       .style("fill", function(d) { 
+                           return d.children ? color(d.depth) : null; 
+                       })
                        .on("click", function(d) { if (focus !== d) zoom(d), d3.event.stopPropagation(); });
 
          var text = g.selectAll("text")
@@ -181,11 +181,7 @@
                      .attr("class", "label")
                      .style("fill-opacity", function(d) { return d.parent === root ? 1 : 0; })
                      .style("display", function(d) { return d.parent === root ? "inline" : "none"; })
-                     .text(function(d) { 
-                         // TODO print amount of time spent here under the name
-                         //console.log("data", d);
-                         //console.log(d.data);
-                         return d.data.name; });
+                     .text(function(d) { return d.data.name; });
 
 
          var node = g.selectAll("circle,text");

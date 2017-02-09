@@ -244,7 +244,7 @@
              rect.on("mouseout", mouseout);
              function mouseover(d) {
                  tooltip.style("visibility", "visible");
-                 var percent_data = (data.get(d) !== undefined) ? percent(data.get(d)) : percent(0);
+                 var percent_data = (data.get(d) !== undefined) ? percent(data.get(d)) : "no data";
                  var purchase_text = d + ": " + percent_data;
 
                  tooltip.transition()        
@@ -262,7 +262,7 @@
                  $tooltip.empty();
              }
              var maxKey = Object.keys(data).sort(function (a, b) {
-                 return data[a] < data.get[b];
+                 return data[a] < data[b];
              })[0];
              var minKey = Object.keys(data).sort(function (a, b) {
                  return data[a] > data[b];
