@@ -39,12 +39,12 @@
  $(document).ready(function (){
      slider = $("#slider").dateRangeSlider({
          bounds:{
-             min: new Date(2016, 12, 01, 0, 0, 0),
-             max: new Date(2018, 01, 01, 0, 0, 0)
+             min: new Date(2016, 12, 18, 0, 0, 0),
+             max: new Date()//(2018, 01, 01, 0, 0, 0)
          },
          defaultValues:{
-             min: new Date(2016, 12, 15, 0, 0, 0),
-             max: new Date(2017, 01, 01, 0, 0, 0)
+             min: new Date(2016, 12, 25, 0, 0, 0),
+             max: new Date()//(2017, 01, 01, 0, 0, 0)
          },
          step:{
              days: 1
@@ -73,47 +73,62 @@
      var temp = { "name": person,
               "children": [{
                   "name": "Family",
-                  "children": []
+                  "children": [],
                   }, {
                   "name": "Friends",
-                  "children": []
+                  "children": [],
                   }, {
                   "name": "Health",
                   "children": [],
                   }, {
                   "name": "Negative",
-                  "children": []
+                  "children": [],
                   }
                   ]
      };
      $.each(root, function(key, p_list){
          if (p_list.length == 0){ // don't show empty categories
              var ind = temp["children"].findIndex((obj => obj.name == key));
-             temp["children"][ind].name = ""
+             temp["children"][ind].name = "";
+             temp["children"][ind].size = 1 ;
+             console.log("what?", key, temp["children"][ind]);
+             temp["children"].splice(ind, 1);
+             //console.log
+             
          }
          p_list.forEach(function(pdict, i) {
-             
+             console.log("pdict", pdict);
              $.each(pdict, function(pname, entries){
-                 var total_time = 0;
-                 $.each(entries, function(day, time){
-                     if (day > minDate && day <= maxDate){
-                         total_time += time;
-                     }    
-                 });
-                 if (!minTime && !maxTime){ 
-                     minTime = total_time; 
-                     maxTime = total_time;
+                 console.log(entries, Object.keys(entries).length == 0);
+                 if (Object.keys(entries).length == 0){
+                     var name = pname + ": NO time spent with ";
+                     var size = 0;
+                     var up_index = temp["children"].findIndex((obj => obj.name == key));
+                     temp["children"][up_index]["children"].push({"name":name, "size":parseInt(size)});
                  }
-                 if (total_time < minTime) { minTime = total_time; }
-                 if (total_time > maxTime) { maxTime = total_time; }
-
-                 form_time = formatTime(parseInt(total_time));
-                 var size = parseInt(total_time);
-                 if (form_time==''){ name = pname + ": NO time spent with "; }
-                 else { name = pname + ": " + form_time; }
-
-                 var up_index = temp["children"].findIndex((obj => obj.name == key));
-                 temp["children"][up_index]["children"].push({"name":name, "size":size});  
+                 else{
+                     var total_time = 0;
+                     console.log(entries, Object.keys(entries).length);
+                     $.each(entries, function(day, time){
+                         if (day > minDate && day <= maxDate){
+                             total_time += time;
+                         }    
+                     });
+                     if (!minTime && !maxTime){ 
+                         minTime = total_time; 
+                         maxTime = total_time;
+                     }
+                     if (total_time < minTime) { minTime = total_time; }
+                     if (total_time > maxTime) { maxTime = total_time; }
+                     
+                     form_time = formatTime(parseInt(total_time));
+                     var size = parseInt(total_time);
+                     if (form_time==''){ var name = pname + ": NO time spent with "; }
+                     else { var name = pname + ": " + form_time; }
+                     
+                     var up_index = temp["children"].findIndex((obj => obj.name == key));
+                     temp["children"][up_index]["children"].push({"name":name, "size":size});  
+                 }
              });
              
          });
@@ -122,15 +137,18 @@
                          .domain([minTime, maxTime])
                          .range([5,150]);
 
-     temp["children"].forEach(function(category, i){      
-         category["children"].forEach(function(person, j){
-             if (person["size"] == 0){ person["size"] = 1;}
-             else { 
-                 var size_scaled = Math.floor(linearScale(person["size"]));
-                 person["size"] = size_scaled;
-                 console.log("person", person);
-             }
-         });
+     temp["children"].forEach(function(category, i){   
+         if (category["children"]){
+             category["children"].forEach(function(person, j){
+                 console.log(person,  person["size"] == 0, typeof person["size"]);
+                 if (person["size"] == 0){ person["size"] = parseInt(1); console.log(person["size"]);}
+                 else { 
+                     var size_scaled = Math.floor(linearScale(person["size"]));
+                     person["size"] = size_scaled;
+                     console.log("person", typeof person["size"]);
+                 }
+             });
+         }
      });
      console.log(temp);
      return temp;                          
