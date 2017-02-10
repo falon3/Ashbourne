@@ -585,8 +585,7 @@ def show_report_home(request):
         result = Activity.objects.prefetch_related('person', 'location').all()
         
         context['selectperson'] = 'all'
-        context['location'] = 'all'
-        
+        context['location'] = 'all'        
 
         if person_hash != "all":
             result = Activity.objects.filter(person__hash=person_hash).all().order_by('time')
