@@ -40,7 +40,7 @@ def point_map_record(name, feat, point, activity, act_type):
         'locLat': str(point.y), 
         'locLon': str(point.x), 
         'category': str(activity.category),
-        'act_type': act_type,
+        'act_type': str(act_type),
         'person': person}
     return point_record
 
@@ -72,12 +72,12 @@ def geofence_record(activity, fence, an_activity, time = '', person = ''):
 @csrf_exempt
 def map_view(request):
     person_hash = request.GET.get('person_hash')
-    person = Person.objects.get(hash=person_hash)
+    person = Person.objects.prefetch_related('home').get(hash=person_hash)
     
     wkt_w = WKTWriter()
 
     # get activity details from 'Location' activities for this person
-    loc_activities = Activity.objects.filter(person__hash=person_hash,category="Location").order_by('time')
+    loc_activities = Activity.objects.prefetch_related('location', 'person').filter(person__hash=person_hash,category="Location").order_by('time')
     j = 0    
 
     # for the table summary. Group all similar location activities in order
@@ -173,7 +173,7 @@ def map_view(request):
             journeys[j].append(reg_point)
     
     # if at end and never left current place add last recroded point in location as 'exit'
-    if len(journeys)>0:
+    if len(journeys[0])>0:
         last_entry = journeys[-1][-1]
         if last_entry['act_type'] == 'geo_fence':
             last_cnt =  GEOSGeometry(last_entry['feature']).centroid
@@ -196,7 +196,7 @@ def map_view(request):
     template = loader.get_template('MapView.html')   
     context = {}
     context['known_locations'] = feature_fences  
-    context['title'] = "Activity Map for " + person.name
+    context['title'] = "Activity Map for " + str(person.name)
     context['point_collection'] = journeys
     context['selectperson'] = person
     context['location'] = 'all'
@@ -210,7 +210,7 @@ def map_view(request):
 # returns list of all person friends
 def get_all_relation_people(person):
     friends = []
-    result = Relation.objects.filter(person_1=person) | Relation.objects.filter(person_2=person)
+    result = Relation.objects.filter(person_1__hash=person.hash) | Relation.objects.filter(person_2__hash=person.hash)
     for relation in result:
         if not relation.person_1 == person:
             friends.append(relation.person_1)
@@ -221,8 +221,8 @@ def get_all_relation_people(person):
 # returns list of all person friends
 def get_friends_fam(person):
     friends = []
-    result1 = Relation.objects.filter(person_1=person, relation_type__contains='Friends').all() | Relation.objects.filter(person_1=person, relation_type__contains='Family').all()
-    result2 = Relation.objects.filter(person_2=person, relation_type__contains='Friends').all() | Relation.objects.filter(person_2=person, relation_type__contains='Family').all()
+    result1 = Relation.objects.filter(person_1=person, relation_type__contains='Friends') | Relation.objects.filter(person_1=person, relation_type__contains='Family')
+    result2 = Relation.objects.filter(person_2=person, relation_type__contains='Friends') | Relation.objects.filter(person_2=person, relation_type__contains='Family')
     result = list(chain(result1, result2))
     for relation in result:
         if (not relation.person_1 == person):
@@ -253,9 +253,9 @@ def get_social_circles(request, person_hash):
     rel_dict["Friends"] = []
     rel_dict["Health"] = []
     rel_dict["Negative"] = []
+    activities = list(Activity.objects.prefetch_related('person', 'location').filter(person__hash=person_hash,category="Location").order_by('time'))
     person = Person.objects.get(hash=person_hash)
-    activities = list(Activity.objects.filter(person__hash=person_hash,category="Location").order_by('time'))
-    relations = Relation.objects.filter(person_1__hash=person_hash).all() | Relation.objects.filter(person_2__hash=person_hash).all()
+    relations = Relation.objects.filter(person_1__hash=person_hash) | Relation.objects.filter(person_2__hash=person_hash)
 
     l1 = [rel.person_1 for rel in relations if not rel.person_1 == person]
     l2 = [rel.person_2 for rel in relations if not rel.person_2 == person and rel.person_2 not in l1]
@@ -327,8 +327,8 @@ def calendar_view(request):
 
 #handles ajax request for calendar data to /socialcdata/person_hash/
 def social_cdata(request, person_hash):
+    activities = list(Activity.objects.prefetch_related('person', 'location').filter(person__hash=person_hash,category="Location").order_by('time'))
     person = Person.objects.get(hash=person_hash)
-    activities = list(Activity.objects.filter(person=person,category="Location").order_by('time'))
     friends = get_friends_fam(person)
 
     #for peop in known_people:
@@ -369,8 +369,8 @@ def social_cdata(request, person_hash):
 
 #handles ajax request for calendar data to /movecdata/person_hash/
 def move_cdata(request, person_hash):
+    activities = list(Activity.objects.prefetch_related('person', 'location').filter(person__hash=person_hash,category="Location").order_by('time'))
     person = Person.objects.get(hash=person_hash)
-    activities = list(Activity.objects.filter(person=person,category="Location").order_by('time'))
     intervals = [] # make a list of all time intervals spent at home
     current = []
     for act in activities:
@@ -519,7 +519,7 @@ def get_sms_in_time(request):
 def get_all_activities(request):
     hash = request.Post['hash']
     person = Person.objects.get(hash=hash)
-    all_activities = Activity.objects.filter(person=person)
+    all_activities = Activity.objects.prefetch_related('person', 'location').filter(person=person)
     act_list = list(all_activities)
     str_result = ""
     for act in all_activities:
@@ -570,9 +570,10 @@ def show_relations_table(request):
 
 
 def show_report_home(request):
-    persons = Person.objects.all()
-    locations = Location.objects.all()
-
+      
+    locations = Location.objects.prefetch_related('person').all()
+    persons = Person.objects.prefetch_related('home').all()
+        
     template = loader.get_template('report_home.html')
     context = {
         'persons': persons,
@@ -581,7 +582,7 @@ def show_report_home(request):
 
     if request.method == "POST":
         person_hash = request.POST.get('person', '')
-        result = Activity.objects.all()
+        result = Activity.objects.prefetch_related('person').all()
         
         context['selectperson'] = 'all'
         context['location'] = 'all'

@@ -87,8 +87,13 @@
                   }
                   ]
      };
-     $.each(root, function(key, p_list){ 
-         p_list.forEach(function(pdict, i) {         
+     $.each(root, function(key, p_list){
+         if (p_list.length == 0){ // don't show empty categories
+             var ind = temp["children"].findIndex((obj => obj.name == key));
+             temp["children"][ind].name = ""
+         }
+         p_list.forEach(function(pdict, i) {
+             
              $.each(pdict, function(pname, entries){
                  var total_time = 0;
                  $.each(entries, function(day, time){
