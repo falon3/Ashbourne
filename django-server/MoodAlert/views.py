@@ -582,7 +582,7 @@ def show_report_home(request):
 
     if request.method == "POST":
         person_hash = request.POST.get('person', '')
-        result = Activity.objects.prefetch_related('person').all()
+        result = Activity.objects.prefetch_related('person', 'location').all()
         
         context['selectperson'] = 'all'
         context['location'] = 'all'
