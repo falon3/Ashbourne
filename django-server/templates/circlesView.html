@@ -91,15 +91,11 @@
              var ind = temp["children"].findIndex((obj => obj.name == key));
              temp["children"][ind].name = "";
              temp["children"][ind].size = 1 ;
-             console.log("what?", key, temp["children"][ind]);
              temp["children"].splice(ind, 1);
-             //console.log
              
          }
          p_list.forEach(function(pdict, i) {
-             console.log("pdict", pdict);
              $.each(pdict, function(pname, entries){
-                 console.log(entries, Object.keys(entries).length == 0);
                  if (Object.keys(entries).length == 0){
                      var name = pname + ": NO time spent with ";
                      var size = 0;
@@ -108,7 +104,6 @@
                  }
                  else{
                      var total_time = 0;
-                     console.log(entries, Object.keys(entries).length);
                      $.each(entries, function(day, time){
                          if (day > minDate && day <= maxDate){
                              total_time += time;
@@ -140,17 +135,14 @@
      temp["children"].forEach(function(category, i){   
          if (category["children"]){
              category["children"].forEach(function(person, j){
-                 console.log(person,  person["size"] == 0, typeof person["size"]);
-                 if (person["size"] == 0){ person["size"] = parseInt(1); console.log(person["size"]);}
+                 if (person["size"] == 0){ person["size"] = parseInt(1); }
                  else { 
                      var size_scaled = Math.floor(linearScale(person["size"]));
                      person["size"] = size_scaled;
-                     console.log("person", typeof person["size"]);
                  }
              });
          }
      });
-     console.log(temp);
      return temp;                          
  };
 

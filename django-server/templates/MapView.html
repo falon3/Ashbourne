@@ -14,7 +14,7 @@
 <script>
     // draws vector shapes on specified layer. data in wkt string format. example:
     // MULTIPOLYGON (((-12638268.5812490005046129 7081697.4326630001887679, -12637389.5554239992052317 7081582.7771206004545093)))
-    function show_vectors(layer, data, datemin, datemax){ 
+    function show_vectors(layer, data, datemin, datemax){     
         var wkt_f = new OpenLayers.Format.WKT(); 
         var last_exit = null; 
         var _MS_PER_HOUR = 1000*60*60;
@@ -31,7 +31,7 @@
                 if (layer.name == "Activities path") color ="green";
                 if (place.category == "Harmful") color = "red";
                             
-                if (place.time != null) {
+                if (place.time != null) {         
                     var time = place.time; 
                     time_compare = moment(time, 'YYYY-MM-DD, hh:mm:ss ').startOf('day').toDate();
                     // skip all activities not within the date range
@@ -70,11 +70,8 @@
                     
                         // update table
                         var curr_entry = $("table#listevent tbody tr > th:first-child").filter(function () {
-                            console.log("enter", moment(time_spent.enter, "YYYY-MM-DD, hh:mm:ss").format('LLL'));
                             return ($(this).text() == moment(time_spent.enter, "YYYY-MM-DD, hh:mm:ss").format('LLL'));
                         });
-                        
-                        console.log("update", curr_entry.text(), curr_entry.next().text(), time_spent.exit.toLocaleString());
                         curr_entry.next().text(moment(time_spent.exit, "YYYY-MM-DD, hh:mm:ss").format('LLL'));
                     }
                     
@@ -311,11 +308,11 @@
      slider = $("#slider").dateRangeSlider({
          bounds:{
              min: new Date(2016, 12, 01, 0, 0, 0),
-             max: new Date()//(2018, 01, 01, 0, 0, 0)
+             max: new Date(2017, 02, 01, 0, 0, 0)
          },
          defaultValues:{
              min: new Date(2016, 12, 25, 0, 0, 0),
-             max: new Date()//(2017, 01, 01, 0, 0, 0)
+             max: new Date(2017, 01, 01, 0, 0, 0)
          },
          step:{
              days: 1
@@ -348,9 +345,8 @@
      // refine table to only have relevant entries by date
      function refineTable(min, max){
          $("table#listevent tbody tr > th:first-child").each(function(index, time) {
-             var compare_start = $(time).text(); // format date
+             var compare_start = moment($(time).text(), 'MMMMDD, Y hh:mm a').toDate(); // format date
              var compare_end = moment($(time).next().text(), 'MMMMDD, Y hh:mm a').startOf('day').toDate(); // only care about date not time
-             
              if (compare_start < min || compare_end > max){
                  $(time).parent().hide();
              }
