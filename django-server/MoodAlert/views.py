@@ -331,8 +331,6 @@ def social_cdata(request, person_hash):
     person = Person.objects.get(hash=person_hash)
     friends = get_friends_fam(person)
 
-    #for peop in known_people:
-    #    pass
     intervals = [] # make a list of all time intervals spent at home
     current = []
 

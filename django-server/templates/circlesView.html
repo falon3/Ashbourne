@@ -33,7 +33,6 @@
 
 </style>
 <h2 style="text-align:center;" >{{title}}</h2>
-</br>
 <div id="slider"></div></br>
 <center><svg width="900" height="900"></svg></center>
 <script>
@@ -125,10 +124,15 @@
 
      temp["children"].forEach(function(category, i){      
          category["children"].forEach(function(person, j){
-             var size_scaled = Math.floor(linearScale(person["size"]));
-             person["size"] = size_scaled;
+             if (person["size"] == 0){ person["size"] = 1;}
+             else { 
+                 var size_scaled = Math.floor(linearScale(person["size"]));
+                 person["size"] = size_scaled;
+                 console.log("person", person);
+             }
          });
      });
+     console.log(temp);
      return temp;                          
  };
 
