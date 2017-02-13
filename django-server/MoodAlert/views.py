@@ -331,7 +331,7 @@ def social_cdata(request, person_hash):
     person = Person.objects.get(hash=person_hash)
     friends = get_friends_fam(person)
 
-    intervals = [] # make a list of all time intervals spent at home
+    intervals = [] # make a list of all time intervals spent at social locations
     current = []
 
     for act in activities:
@@ -398,7 +398,7 @@ def move_cdata(request, person_hash):
     for day in data.keys():
         data[day] = (datetime.timedelta(1) - data[day]).seconds
         #if data[day] == 0: # don't send data for nothing in a day
-        #    data.pop(day)
+            #data.pop(day)
     return send_csv_data(data)
 
 # helper function to send csv data back from ajax request    

@@ -261,13 +261,11 @@
                  var $tooltip = $("#tooltip");
                  $tooltip.empty();
              }
-             var maxKey = Object.keys(data).sort(function (a, b) {
-                 return data[a] < data[b];
-             })[0];
-             var minKey = Object.keys(data).sort(function (a, b) {
-                 return data[a] > data[b];
-             })[0];
-
+             var sorted = Object.keys(data).sort(function (a, b) {
+                 return data[a] - data[b];
+             });
+             var minKey = sorted[0];
+             var maxKey = sorted[sorted.length-1];
              $(div_id).next().find('td#maxdate').text(maxKey.replace('$',''));
              $(div_id).next().find('td#mindate').text(minKey.replace('$',''));
              $(div_id).next().find('td#min').text((data[minKey]*100).toFixed(1) + " %");
